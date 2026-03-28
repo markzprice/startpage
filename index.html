@@ -715,6 +715,9 @@ body {
 
 </div>
 <script>
+// ─── Config ──────────────────────────────────────────────────────
+const GOOGLE_API_KEY = '_HEREAIzaSyCC0CbF4UOO1MeVLjVSi25wX-3IJhDXBoc';
+
 // ─── WMO ────────────────────────────────────────────────────────
 const WMO = {
   0:['☀️','Clear'], 1:['🌤','Mostly clear'], 2:['⛅','Partly cloudy'], 3:['☁️','Overcast'],
@@ -1337,16 +1340,41 @@ async function fetchAllergy() {
   document.getElementById('pm10-val').style.color = pm10col;
   document.getElementById('pm10-sub').textContent = pm10 < 54 ? 'Good' : pm10 < 154 ? 'Moderate' : 'Elevated';
 
-  // Pollen
-  function setBadge(id, v, isRag) {
-    const el = document.getElementById(id);
-    const [lbl, cls] = pollenClass(v, isRag);
-    el.textContent = lbl; el.className = 'pol-badge '+cls;
-  }
-  setBadge('pol-grass', grass, false);
-  setBadge('pol-ragweed', rag, true);
-  setBadge('pol-tree', tree, false);
-  setBadge('pol-mold', dust, false);
+  // Mold/Dust (kept from Open-Meteo — Google Pollen API handles tree/grass/weed)
+  const el = document.getElementById('pol-mold');
+  const [lbl, cls] = pollenClass(dust, false);
+  el.textContent = lbl; el.className = 'pol-badge '+cls;
+}
+
+// ─── Fetch pollen (Google Pollen API) ────────────────────────────
+async function fetchPollen() {
+  if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_KEY_HERE') return;
+  try {
+    const url = `https://pollen.googleapis.com/v1/forecast:lookup?key=${GOOGLE_API_KEY}&location.longitude=-96.0089&location.latitude=36.154&days=1`;
+    const data = await fetch(url).then(r => r.json());
+    const today = data.dailyInfo?.[0];
+    if (!today) return;
+    function upiClass(v) {
+      if (!v || v === 0) return ['None',  'pol-none'];
+      if (v === 1)       return ['V.Low', 'pol-low'];
+      if (v === 2)       return ['Low',   'pol-low'];
+      if (v === 3)       return ['Mod',   'pol-mod'];
+      if (v === 4)       return ['High',  'pol-high'];
+      return             ['V.High','pol-vhigh'];
+    }
+    function setPolBadge(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const [lbl, cls] = upiClass(value ?? 0);
+      el.textContent = lbl; el.className = 'pol-badge ' + cls;
+    }
+    for (const pt of today.pollenTypeInfo || []) {
+      const v = pt.indexInfo?.value ?? 0;
+      if (pt.code === 'TREE')  setPolBadge('pol-tree', v);
+      if (pt.code === 'GRASS') setPolBadge('pol-grass', v);
+      if (pt.code === 'WEED')  setPolBadge('pol-ragweed', v);
+    }
+  } catch(e) { console.warn('Pollen API error:', e); }
 }
 
 // ─── Burn ban check (Oklahoma Forestry Services) ─────────────────
@@ -1823,6 +1851,7 @@ async function fetchOKLeg() {
 renderAlerts(); // show placeholders immediately
 CITIES.forEach(c => fetchCity(c).catch(console.error));
 fetchAllergy().catch(console.error);
+fetchPollen().catch(console.error);
 fetchHeadlines().catch(console.error);
 fetchTulsaNews().catch(console.error);
 checkBurnBan().catch(console.error);
@@ -1845,6 +1874,7 @@ fetchOKLeg().catch(console.error);
 setInterval(() => {
   CITIES.forEach(c => fetchCity(c).catch(console.error));
   fetchAllergy().catch(console.error);
+  fetchPollen().catch(console.error);
   checkBurnBan().catch(console.error);
   fetchNWSAlerts().catch(console.error);
   fetchRiver().catch(console.error);
