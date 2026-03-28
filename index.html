@@ -146,13 +146,13 @@ body {
 .simple-city .cb-time24 { font-size:20px; }
 
 
-/* ─── CENTER COLUMN (10-day only) ─── */
+/* ─── CENTER COLUMN (10-day forecast + Rogers/Seoul below) ─── */
 #center-column {
-  width: 240px;
-  flex-shrink: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 /* ─── LOCAL INFO GRID (full-width, below wx row) ─── */
 #local-grid {
@@ -600,7 +600,7 @@ body {
       </div>
     </div>
 
-    <!-- Center: 10-day forecast only -->
+    <!-- Center + Right: 10-day forecast, then Rogers + Seoul below -->
     <div id="center-column">
       <div class="panel" id="forecast-panel">
         <h2>Tulsa — 10-Day</h2>
@@ -608,9 +608,8 @@ body {
           <div style="font-size:12px;color:#52525b">Loading…</div>
         </div>
       </div>
-    </div>
 
-    <!-- Right: Rogers + Seoul -->
+      <!-- Rogers + Seoul sit below forecast, filling dead space -->
     <div id="extra-cities">
       <div class="city-block" id="rogers-block">
         <div class="cb-header">
@@ -657,6 +656,8 @@ body {
         <div class="mini-strip" id="seoul-mini"></div>
       </div>
     </div>
+
+    </div><!-- end #center-column -->
 
   </div>
 
