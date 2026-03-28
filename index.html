@@ -459,9 +459,10 @@ body {
     flex: 1 1 calc(33% - 6px);
   }
 
-  /* Local info panels: each one full width, stacked */
+  /* Local info panels and column groups: each one full width, stacked */
   /* flex and min-width need !important to beat inline style attributes */
-  #local-grid > .panel {
+  #local-grid > .panel,
+  #local-grid > .lc-group {
     min-width: 0 !important;
     flex: 1 1 100% !important;
     width: 100%;
@@ -667,8 +668,9 @@ body {
   <!-- ─── LOCAL INFO GRID ─── -->
   <div id="local-grid">
 
-    <!-- Sky & Space (wider — has APOD) -->
-    <div class="panel" style="flex:2;min-width:340px">
+    <!-- Sky & Space + Coastal column -->
+    <div class="lc-group" style="flex:2;min-width:340px;display:flex;flex-direction:column;gap:10px;">
+    <div class="panel">
       <h2>Sky &amp; Space</h2>
       <div class="lc-cards">
         <div class="local-card" id="moon-card">
@@ -699,7 +701,20 @@ body {
           </div>
         </div>
       </div>
-    </div>
+    </div><!-- end Sky & Space -->
+
+    <!-- Coastal — grouped under Sky & Space -->
+    <div class="panel">
+      <h2>Coastal — Boothbay</h2>
+      <div class="lc-cards">
+        <div class="local-card" style="flex:1 1 100%" id="tide-card">
+          <div class="local-card-title">Tides</div>
+          <div id="tide-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div><!-- end Coastal -->
+
+    </div><!-- end Sky & Space + Coastal column -->
 
     <!-- Tulsa Local -->
     <div class="panel" style="flex:1.5;min-width:260px">
@@ -766,16 +781,6 @@ body {
       </div>
     </div>
 
-    <!-- Coastal -->
-    <div class="panel" style="flex:0.8;min-width:160px">
-      <h2>Coastal — Boothbay</h2>
-      <div class="lc-cards">
-        <div class="local-card" style="flex:1 1 100%" id="tide-card">
-          <div class="local-card-title">Tides</div>
-          <div id="tide-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
-        </div>
-      </div>
-    </div>
 
   </div>
 
