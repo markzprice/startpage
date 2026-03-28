@@ -1915,7 +1915,7 @@ async function fetchBirthdays() {
 async function fetchAPOD() {
   try {
     const data = await Promise.race([
-      fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY').then(r=>r.json()),
+      fetch('https://api.nasa.gov/planetary/apod?api_key=hMFvojRpgAvd6m1VOoe3idtRP0TqxtgiUuRRFLWw').then(r=>r.json()),
       new Promise((_,rej)=>setTimeout(rej,10000))
     ]);
     document.getElementById('apod-title').textContent = data.title || '';
