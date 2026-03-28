@@ -761,6 +761,21 @@ body {
       </div>
     </div>
 
+    <!-- US Congress -->
+    <div class="panel" style="flex:1;min-width:220px">
+      <h2>US Congress</h2>
+      <div class="lc-cards">
+        <div class="local-card" style="flex:1 1 100%" id="congress-card">
+          <div class="local-card-title">Recently Enacted Legislation</div>
+          <div id="congress-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="congress-recent-card">
+          <div class="local-card-title">Recent Bills</div>
+          <div id="congress-recent-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Daily -->
     <div class="panel" style="flex:1.5;min-width:260px">
       <h2>Daily</h2>
@@ -1968,6 +1983,44 @@ async function fetchOKLeg() {
   }
 }
 
+// ─── US Congress ─────────────────────────────────────────────────
+async function fetchCongress() {
+  function parseRSS(xml, selector) {
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    return Array.from(doc.querySelectorAll('item')).slice(0, 4).map(it => ({
+      title: it.querySelector('title')?.textContent?.trim() || '',
+      link:  it.querySelector('link')?.textContent?.trim() || '#'
+    }));
+  }
+  function renderItems(elId, items, emptyMsg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (!items.length) {
+      el.innerHTML = `<div style="font-size:10px;color:#52525b">${emptyMsg}</div>`;
+      return;
+    }
+    el.innerHTML = items.map(it =>
+      `<div class="okleg-row"><a class="okleg-link" href="${it.link}" target="_blank">${it.title}</a></div>`
+    ).join('');
+  }
+  // Recently enacted (signed into law)
+  try {
+    const enacted = await corsProxy('https://www.congress.gov/rss/recently-enacted-legislation.xml');
+    renderItems('congress-list', parseRSS(enacted.contents, 'item'), 'No recent enactments');
+  } catch(e) {
+    const el = document.getElementById('congress-list');
+    if (el) el.innerHTML = '<div style="font-size:10px;color:#52525b">Unavailable</div>';
+  }
+  // Recent bills introduced
+  try {
+    const recent = await corsProxy('https://www.congress.gov/rss/most-recent-bills.xml');
+    renderItems('congress-recent-list', parseRSS(recent.contents, 'item'), 'No recent bills');
+  } catch(e) {
+    const el = document.getElementById('congress-recent-list');
+    if (el) el.innerHTML = '<div style="font-size:10px;color:#52525b">Unavailable</div>';
+  }
+}
+
 // ─── Init ────────────────────────────────────────────────────────
 renderAlerts(); // show placeholders immediately
 CITIES.forEach(c => fetchCity(c).catch(console.error));
@@ -1991,6 +2044,7 @@ fetchBirthdays().catch(console.error);
 fetchAPOD().catch(console.error);
 fetchTULStatus().catch(console.error);
 fetchOKLeg().catch(console.error);
+fetchCongress().catch(console.error);
 
 // Weather + env + local: every 15 min
 setInterval(() => {
@@ -2024,6 +2078,7 @@ setInterval(() => {
   fetchBirthdays().catch(console.error);
   fetchAPOD().catch(console.error);
   fetchOKLeg().catch(console.error);
+  fetchCongress().catch(console.error);
 }, 21600000);
 </script>
 </body>
