@@ -406,18 +406,44 @@ body {
 /* ─── MOBILE RESPONSIVE ─── */
 @media (max-width: 768px) {
 
+  /* Prevent page from going wider than viewport */
+  .page-wrap {
+    padding: 8px;
+    gap: 8px;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   /* Weather section: stack everything vertically */
   .wx-section {
     flex-direction: column;
   }
   #cities-panel {
     width: 100%;
+    max-width: 100%;
+    flex-shrink: 1;
   }
   #center-column {
     width: 100%;
+    max-width: 100%;
+    flex-shrink: 1;
   }
   #extra-cities {
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* City blocks: never wider than screen */
+  .city-block {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Forecast rows: allow wrapping on very narrow screens */
+  .fc-row {
+    flex-wrap: wrap;
+    row-gap: 2px;
   }
 
   /* Env cards: 3 per row on phone instead of all in one line */
@@ -452,9 +478,6 @@ body {
   /* City block clock: slightly smaller on narrow screens */
   .cb-time24 { font-size: 22px; }
   .simple-city .cb-time24 { font-size: 18px; }
-
-  /* Tighten page padding */
-  .page-wrap { padding: 8px; gap: 8px; }
 }
 </style>
 </head>
