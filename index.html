@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #1a1a1f;
+  color: #d4d4d8;
+  font-size: 14px;
+  min-height: 100vh;
+}
+.page-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+.panel {
+  background: #25252b;
+  border: 1px solid #33333b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+.panel h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+/* ─── WEATHER SECTION (cities + compact forecast) ─── */
+.wx-section {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* ─── CITIES PANEL ─── */
+#cities-panel {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.city-block {
+  flex: 1;
+  background: #1e1e26;
+  border: 1px solid #33333b;
+  border-radius: 8px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  transition: background 0.6s, border-color 0.6s;
+}
+#tulsa-block { border: 1.5px solid #6366f1; }
+
+.cb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.cb-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #71717a; }
+.cb-date { font-size: 10px; color: #52525b; }
+
+.cb-body { display: flex; align-items: center; gap: 8px; }
+.cb-left { flex: 1; min-width: 0; }
+.cb-right { flex-shrink: 0; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cb-tod-label { font-size: 9px; font-weight: 600; text-align: center; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.cb-time24 { font-size: 28px; font-weight: 200; color: #f4f4f5; letter-spacing: -1.5px; line-height: 1; }
+.cb-time12 { font-size: 12px; color: #71717a; margin-top: 1px; margin-bottom: 4px; }
+.cb-temp-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+.cb-emoji     { font-size: 15px; }
+.cb-temp-main { font-size: 18px; font-weight: 300; color: #f4f4f5; }
+.cb-temp-sub  { font-size: 11px; color: #71717a; }
+.cb-desc { font-size: 11px; color: #a1a1aa; }
+.cb-wind { font-size: 10px; color: #52525b; margin-top: 1px; }
+.cb-golden { display:flex; gap:10px; margin-top:3px; font-size:9px; }
+.gh-am { color:#f59e0b; }
+.gh-pm { color:#fb923c; }
+.cb-hl   { font-size: 11px; margin-top: 2px; }
+.cb-hi   { color: #f87171; margin-right: 8px; }
+.cb-lo   { color: #60a5fa; }
+/* dense extra row: feels like · dew point · humidity */
+.cb-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #2a2a32;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.cb-eitem { white-space: nowrap; }
+.cb-elbl  { color: #3f3f46; text-transform: uppercase; font-size: 8px; letter-spacing: 0.06em; margin-right: 2px; }
+.cb-eval  { color: #a1a1aa; font-weight: 500; }
+.cb-eval-hi { color: #fdba74; }   /* warm feels-like */
+.cb-eval-lo { color: #93c5fd; }   /* cold feels-like */
+.cb-eval-dew { }                  /* tinted by comfort */
+.cb-esep  { color: #2a2a32; margin: 0 1px; }
+
+/* Seoul states */
+.seoul-day   { background: #1a2535 !important; border-color: #2d4a6b !important; }
+.seoul-night { background: #0f0f1a !important; border-color: #1e1e30 !important; }
+.seoul-dawn  { background: #1f1520 !important; border-color: #3d2040 !important; }
+
+/* 3-hour mini strip (Rogers / Seoul) */
+.mini-strip {
+  display: flex;
+  gap: 3px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #2a2a32;
+}
+.mhr-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 0;
+  border-radius: 4px;
+}
+.mhr-col.now { background: #2d2d3a; }
+.mhr-t  { font-size: 9px; color: #52525b; }
+.mhr-ic { font-size: 12px; line-height: 1.2; }
+.mhr-tp { font-size: 10px; color: #d4d4d8; font-weight: 500; }
+.mhr-pp { height: 2px; width: 80%; background: #3b82f6; border-radius: 1px; }
+
+/* ─── TULSA HOURLY PANEL (full width, top) ─── */
+#tulsa-hourly-panel { padding-top: 8px; }
+/* Simple city blocks (Springfield, Boothbay) */
+.simple-city .cb-time24 { font-size:20px; }
+
+
+/* ─── CENTER COLUMN (10-day only) ─── */
+#center-column {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* ─── LOCAL INFO GRID (full-width, below wx row) ─── */
+#local-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+#local-grid > .panel { flex: 1; }
+/* ─── 10-DAY FORECAST (compact, beside cities) ─── */
+#forecast-panel {
+  /* width set by #center-column */
+}
+#forecast-panel .fc-scroll {
+  max-height: none;
+}
+/* ─── EXTRA CITIES (Rogers + Seoul, side by side to right of 10-day) ─── */
+#extra-cities {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 7px;
+}
+/* ─── TULSA STATUS ROW (ozone + burn ban) ─── */
+#tulsa-status-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.status-badge {
+  font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+  background: #1e1e26; border: 1px solid #2a2a32; color: #3f3f46;
+}
+.status-badge.active-ozone { background: #431407; color: #fb923c; border-color: #9a3412; }
+.status-badge.active-burn  { background: #450a0a; color: #fca5a5; border-color: #991b1b; }
+#tulsa-hourly-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+  display: flex;
+  align-items: center;
+}
+.hr-strip { display: flex; gap: 3px; align-items: flex-start; min-width: max-content; }
+.hr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 46px;
+  padding: 4px 3px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.hr-item.now { background: #2d2d3a; }
+.hr-lbl  { font-size: 10px; color: #52525b; }
+.hr-icon { font-size: 16px; line-height: 1; }
+.hr-temp { font-size: 12px; font-weight: 500; color: #d4d4d8; }
+.hr-hum  { font-size: 10px; color: #60a5fa; }
+.hr-uv   { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 4px; }
+.hr-pop  { height: 3px; border-radius: 1.5px; background: #3b82f6; width: 36px; }
+.uv-0    { background:#111; color:#3f3f46; }
+.uv-low  { background:#052e16; color:#6ee7b7; }
+.uv-mod  { background:#1c1508; color:#fcd34d; }
+.uv-high { background:#1c0f05; color:#fdba74; }
+.uv-vhi  { background:#1c0505; color:#fca5a5; }
+.uv-ext  { background:#150520; color:#c084fc; }
+
+/* ─── 10-DAY FORECAST ─── */
+.fc-scroll { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
+.fc-row {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 0; border-bottom: 1px solid #2e2e35; font-size: 12px;
+}
+.fc-suns { display:flex; gap:5px; align-items:center; flex-shrink:0; font-size:9px; white-space:nowrap; margin-left:2px; }
+.fc-sr  { color:#fcd34d; }
+.fc-ss  { color:#818cf8; }
+.fc-dur { color:#3f3f46; }
+.fc-row:last-child { border-bottom: none; }
+.fc-row.fc-today .fc-day { color: #d4d4d8; font-weight: 600; }
+.fc-day  { color: #71717a; width: 32px; flex-shrink: 0; font-size: 11px; }
+.fc-icon { width: 20px; text-align: center; flex-shrink: 0; }
+.fc-bar  { flex: 1; height: 4px; border-radius: 2px; background: #2e2e35; position: relative; overflow: hidden; }
+.fc-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,#60a5fa,#f87171); }
+.fc-hi   { color: #f87171; font-weight: 500; width: 26px; text-align: right; flex-shrink: 0; font-size: 11px; }
+.fc-lo   { color: #60a5fa; font-weight: 500; width: 26px; text-align: right; flex-shrink: 0; font-size: 11px; }
+.fc-pop  { font-size: 10px; color: #3b82f6; width: 24px; text-align: right; flex-shrink: 0; }
+
+/* ─── ALERTS STRIP ─── */
+#alerts-strip {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.alert-card {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.alert-ozone { background: #431407; color: #fb923c; border: 1px solid #9a3412; }
+.alert-burn  { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+.alert-ok    { background: #1a1a1f; color: #3f3f46; border: 1px solid #2a2a32; }
+
+/* ─── ENV SECTION ─── */
+.env-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.env-card {
+  background: #1e1e26;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 78px;
+  flex: 1;
+}
+.env-card-link {
+  text-decoration: none;
+  display: flex;
+  flex: 1;
+  min-width: 78px;
+}
+.env-card-link:hover .env-card { border: 1px solid #4f4f5a; }
+.env-card-link .env-card { flex: 1; min-width: unset; }
+.env-card-val { font-size: 16px; font-weight: 700; line-height: 1; }
+.env-card-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: #52525b; margin-top: 2px; }
+.env-card-sub { font-size: 9px; color: #71717a; margin-top: 1px; }
+
+.pollen-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pol-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.pol-name  { color: #71717a; }
+.pol-badge { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 8px; }
+.pol-none  { background:#1e3a2e; color:#6ee7b7; }
+.pol-low   { background:#1e3a2e; color:#6ee7b7; }
+.pol-mod   { background:#78350f; color:#fcd34d; }
+.pol-high  { background:#7f2d0f; color:#fdba74; }
+.pol-vhigh { background:#7f1d1d; color:#fca5a5; }
+
+/* ─── TULSA LOCAL NEWS ─── */
+.tn-cols { display:flex; gap:12px; }
+.tn-col  { flex:1; min-width:0; }
+.tn-item { padding:5px 4px; border-bottom:1px solid #2e2e35; }
+.tn-item:last-child { border-bottom:none; }
+.tn-link { color:#d4d4d8; font-size:12px; text-decoration:none; line-height:1.4; display:block; }
+.tn-link:hover { color:#a5b4fc; }
+.tn-meta { font-size:9px; color:#3f3f46; margin-top:2px; }
+.tn-src  { color:#52525b; }
+#tn-updated { font-size:9px; color:#3f3f46; }
+
+/* ─── HEADLINES ─── */
+.news-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.news-header h2 { margin-bottom: 0; }
+#hl-updated { font-size: 9px; color: #3f3f46; }
+.hl-cols { display: flex; gap: 12px; }
+.hl-col  { flex: 1; min-width: 0; }
+.hl-item {
+  padding: 6px 4px; border-bottom: 1px solid #2e2e35;
+  cursor: pointer; border-radius: 4px; margin: 0 -4px;
+  transition: background 0.1s;
+}
+.hl-item:last-child { border-bottom: none; }
+.hl-item:hover, .hl-item.open { background: #1e1e26; }
+.hl-row { display: flex; align-items: flex-start; gap: 7px; }
+.hl-cov {
+  flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; margin-top: 1px;
+}
+.cov-1 { background: #2a2a35; color: #52525b; }
+.cov-2 { background: #1c2a1c; color: #6ee7b7; }
+.cov-3 { background: #78350f; color: #fcd34d; }
+.cov-hot { background: #7f1d1d; color: #fca5a5; }
+.hl-head { flex: 1; min-width: 0; }
+.hl-title { font-size: 12px; color: #d4d4d8; line-height: 1.4; }
+.hl-age   { flex-shrink: 0; font-size: 10px; color: #3f3f46; margin-top: 1px; }
+.hl-detail { display: none; padding: 6px 0 2px 24px; }
+.hl-item.open .hl-detail { display: block; }
+.hl-desc { font-size: 11px; color: #a1a1aa; line-height: 1.5; margin-bottom: 5px; }
+.hl-srcs { font-size: 10px; color: #6366f1; margin-bottom: 5px; }
+.hl-links { display: flex; flex-wrap: wrap; gap: 4px; }
+.hl-link {
+  font-size: 10px; color: #818cf8; text-decoration: none;
+  background: #1e1e26; border: 1px solid #33333b;
+  padding: 1px 7px; border-radius: 10px;
+}
+.hl-link:hover { background: #2d2d3a; color: #a5b4fc; }
+.hl-err { font-size: 12px; color: #52525b; padding: 12px 4px; }
+
+/* ─── LOCAL CONDITIONS PANELS ─── */
+.lc-cards { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; margin-top: 6px; }
+/* On This Day */
+.otd-row { display:flex; gap:6px; padding:2px 0; border-bottom:1px solid #2a2a32; font-size:10px; }
+.otd-row:last-child { border-bottom:none; }
+.otd-year { color:#818cf8; font-weight:600; width:38px; flex-shrink:0; }
+.otd-text { color:#a1a1aa; line-height:1.4; }
+/* OK Legislature */
+.okleg-row { padding:2px 0; border-bottom:1px solid #2a2a32; }
+.okleg-row:last-child { border-bottom:none; }
+.okleg-link { font-size:10px; color:#a1a1aa; text-decoration:none; line-height:1.4; display:block; }
+.okleg-link:hover { color:#a5b4fc; }
+.local-card {
+  background: #1e1e26; border-radius: 6px; padding: 8px 10px;
+  flex: 1; min-width: 130px;
+}
+.local-card-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #52525b; margin-bottom: 5px; }
+.river-level { font-size: 22px; font-weight: 200; line-height: 1; }
+.river-label { font-size: 9px; color: #71717a; margin-top: 2px; }
+.quake-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid #2a2a32; font-size: 10px; }
+.quake-item:last-child { border-bottom: none; }
+.quake-mag { font-weight: 700; width: 32px; flex-shrink: 0; }
+.quake-place { flex: 1; color: #71717a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quake-age { color: #3f3f46; flex-shrink: 0; font-size: 9px; }
+/* NWS alert severity */
+.alert-severe { background: #431407; color: #fb923c; border: 1px solid #9a3412; }
+.alert-extreme { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+.alert-minor { background: #1c1c08; color: #fcd34d; border: 1px solid #3d3a10; }
+/* Sunrise/sunset under clock */
+.cb-sunrises { font-size: 8px; color: #3f3f46; text-align: center; line-height: 1.7; white-space: nowrap; }
+/* traffic placeholder */
+.traffic-placeholder { font-size: 11px; color: #3f3f46; font-style: italic; }
+/* Tide card */
+.tide-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; gap:6px; }
+.tide-type-h { font-size:9px; font-weight:700; color:#60a5fa; min-width:28px; }
+.tide-type-l { font-size:9px; font-weight:700; color:#71717a; min-width:28px; }
+.tide-time { font-size:10px; color:#d4d4d8; flex:1; }
+.tide-ht { font-size:11px; font-weight:600; color:#e4e4e7; }
+/* ISS card */
+.iss-dist { font-size:22px; font-weight:200; line-height:1; }
+/* Kp card */
+.kp-val { font-size:28px; font-weight:200; line-height:1; }
+/* Reservoir card */
+.res-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; gap:6px; }
+.res-name { font-size:10px; color:#a1a1aa; }
+.res-val { font-size:11px; font-weight:600; color:#e4e4e7; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ─── TOP: Tulsa hourly ─── -->
+  <div class="panel" id="tulsa-hourly-panel">
+    <div id="tulsa-hourly-scroll">
+      <div class="hr-strip" id="tulsa-hr-row">
+        <div class="hr-item now"><div class="hr-lbl">--</div><div class="hr-icon">⏳</div><div class="hr-temp">--</div><div class="hr-hum">--%</div><div class="hr-uv uv-0">UV--</div><div class="hr-pop" style="opacity:0"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ENV / AIR QUALITY PANEL ─── -->
+  <div class="panel" id="env-panel">
+    <h2>Air, Environment &amp; Health — Tulsa</h2>
+    <div class="env-cards">
+      <a class="env-card-link" href="https://www.airnow.gov/aqi/aqi-basics/" target="_blank" title="What is AQI?"><div class="env-card"><div class="env-card-val" id="aqi-val" style="color:#6ee7b7">--</div><div class="env-card-lbl">AQI</div><div class="env-card-sub" id="aqi-sub">--</div></div></a>
+      <a class="env-card-link" href="https://www.airnow.gov/ozone/" target="_blank" title="About ground-level ozone"><div class="env-card"><div class="env-card-val" id="o3-val" style="color:#a1a1aa">--</div><div class="env-card-lbl">Ozone</div><div class="env-card-sub" id="o3-sub">ppb</div></div></a>
+      <a class="env-card-link" href="https://www.epa.gov/no2-pollution/basic-information-about-no2" target="_blank" title="About nitrogen dioxide"><div class="env-card"><div class="env-card-val" id="no2-val" style="color:#a1a1aa">--</div><div class="env-card-lbl">NO₂</div><div class="env-card-sub" id="no2-sub">μg/m³</div></div></a>
+      <a class="env-card-link" href="https://www.epa.gov/pm-pollution/particulate-matter-pm-basics" target="_blank" title="About fine particle pollution"><div class="env-card"><div class="env-card-val" id="pm25-val" style="color:#a1a1aa">--</div><div class="env-card-lbl">PM2.5</div><div class="env-card-sub" id="pm25-sub">μg/m³</div></div></a>
+      <a class="env-card-link" href="https://www.epa.gov/pm-pollution/particulate-matter-pm-basics" target="_blank" title="About coarse particle pollution"><div class="env-card"><div class="env-card-val" id="pm10-val" style="color:#a1a1aa">--</div><div class="env-card-lbl">PM10</div><div class="env-card-sub" id="pm10-sub">μg/m³</div></div></a>
+      <a class="env-card-link" href="https://www.epa.gov/sunsafety/uv-index-scale-0" target="_blank" title="UV index scale explained"><div class="env-card"><div class="env-card-val" id="uv-val" style="color:#fcd34d">--</div><div class="env-card-lbl">UV Index</div><div class="env-card-sub" id="uv-sub">--</div></div></a>
+      <a class="env-card-link" href="https://www.weather.gov/ama/heatindex" target="_blank" title="Heat index &amp; wind chill explained"><div class="env-card"><div class="env-card-val" id="feels-val" style="color:#a1a1aa">--°F</div><div class="env-card-lbl">Feels Like</div><div class="env-card-sub" id="feels-sub"></div></div></a>
+      <a class="env-card-link" href="https://www.weather.gov/arx/why_dewpoint_vs_humidity" target="_blank" title="Why dew point matters more than humidity"><div class="env-card"><div class="env-card-val" id="dew-val" style="color:#a1a1aa">--°F</div><div class="env-card-lbl">Dew Point</div><div class="env-card-sub" id="dew-sub"></div></div></a>
+      <a class="env-card-link" href="https://www.weather.gov/arx/why_dewpoint_vs_humidity" target="_blank" title="Relative humidity vs dew point"><div class="env-card"><div class="env-card-val" id="hum-val" style="color:#60a5fa">--%</div><div class="env-card-lbl">Humidity</div><div class="env-card-sub" id="hum-sub"></div></div></a>
+      <a class="env-card-link" href="https://forecast.weather.gov/glossary.php?word=visibility" target="_blank" title="Visibility scale"><div class="env-card"><div class="env-card-val" id="vis-val" style="color:#a1a1aa">--</div><div class="env-card-lbl">Visibility</div><div class="env-card-sub" id="vis-sub"></div></div></a>
+    </div>
+    <div class="pollen-row">
+      <div class="pol-item"><span class="pol-name">Grass</span>  <span class="pol-badge pol-low" id="pol-grass">--</span></div>
+      <div class="pol-item"><span class="pol-name">Ragweed</span><span class="pol-badge pol-low" id="pol-ragweed">--</span></div>
+      <div class="pol-item"><span class="pol-name">Tree</span>   <span class="pol-badge pol-low" id="pol-tree">--</span></div>
+      <div class="pol-item"><span class="pol-name">Mold/Dust</span><span class="pol-badge pol-low" id="pol-mold">--</span></div>
+    </div>
+  </div>
+
+
+  <!-- ─── ROW: Left cities + center (forecast+local) + right cities ─── -->
+  <div class="wx-section">
+
+    <!-- Left: ozone/burn-ban status + Tulsa + Springfield + Boothbay -->
+    <div id="cities-panel">
+      <div id="tulsa-status-row">
+        <div class="status-badge" id="status-ozone">Ozone: OK</div>
+        <div class="status-badge" id="status-burnban">Burn Ban: None</div>
+      </div>
+      <div class="city-block" id="tulsa-block">
+        <div class="cb-header">
+          <span class="cb-name">Tulsa, OK</span>
+          <span class="cb-date" id="tulsa-date"></span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-left">
+            <div class="cb-time24" id="tulsa-time24">--:--</div>
+            <div class="cb-time12" id="tulsa-time12">--:-- --</div>
+            <div class="cb-temp-row">
+              <span class="cb-emoji"     id="tulsa-emoji">⏳</span>
+              <span class="cb-temp-main" id="tulsa-temp-main">--°F</span>
+              <span class="cb-temp-sub"  id="tulsa-temp-sub">--°C</span>
+            </div>
+            <div class="cb-desc" id="tulsa-desc">Loading…</div>
+            <div class="cb-hl"><span class="cb-hi" id="tulsa-hi"></span><span class="cb-lo" id="tulsa-lo"></span></div>
+            <div class="cb-wind" id="tulsa-wind"></div>
+            <div class="cb-golden" id="tulsa-golden"></div>
+            <div class="cb-extra" id="tulsa-extra"></div>
+          </div>
+          <div class="cb-right"><div id="tulsa-arc"></div><div class="cb-tod-label" id="tulsa-tod"></div><div class="cb-sunrises" id="tulsa-sunrises"></div></div>
+        </div>
+        <div class="mini-strip" id="tulsa-mini"></div>
+      </div>
+
+      <div class="city-block simple-city" id="springfield-block">
+        <div class="cb-header">
+          <span class="cb-name">Springfield, MO</span>
+          <span class="cb-date" id="springfield-date"></span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-left">
+            <div class="cb-time24" id="springfield-time24">--:--</div>
+            <div class="cb-time12" id="springfield-time12">--:-- --</div>
+            <div class="cb-temp-row">
+              <span class="cb-emoji" id="springfield-emoji">⏳</span>
+              <span class="cb-temp-main" id="springfield-temp-main">--°F</span>
+              <span class="cb-temp-sub" id="springfield-temp-sub">--°C</span>
+            </div>
+            <div class="cb-desc" id="springfield-desc">Loading…</div>
+            <div class="cb-hl"><span class="cb-hi" id="springfield-hi"></span><span class="cb-lo" id="springfield-lo"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="city-block simple-city" id="boothbay-block">
+        <div class="cb-header">
+          <span class="cb-name">Boothbay, ME</span>
+          <span class="cb-date" id="boothbay-date"></span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-left">
+            <div class="cb-time24" id="boothbay-time24">--:--</div>
+            <div class="cb-time12" id="boothbay-time12">--:-- --</div>
+            <div class="cb-temp-row">
+              <span class="cb-emoji" id="boothbay-emoji">⏳</span>
+              <span class="cb-temp-main" id="boothbay-temp-main">--°F</span>
+              <span class="cb-temp-sub" id="boothbay-temp-sub">--°C</span>
+            </div>
+            <div class="cb-desc" id="boothbay-desc">Loading…</div>
+            <div class="cb-hl"><span class="cb-hi" id="boothbay-hi"></span><span class="cb-lo" id="boothbay-lo"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: 10-day forecast only -->
+    <div id="center-column">
+      <div class="panel" id="forecast-panel">
+        <h2>Tulsa — 10-Day</h2>
+        <div class="fc-scroll" id="forecast-list">
+          <div style="font-size:12px;color:#52525b">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Rogers + Seoul -->
+    <div id="extra-cities">
+      <div class="city-block" id="rogers-block">
+        <div class="cb-header">
+          <span class="cb-name">Rogers, AR</span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-left">
+            <div class="cb-time24" id="rogers-time24">--:--</div>
+            <div class="cb-time12" id="rogers-time12">--:-- --</div>
+            <div class="cb-temp-row">
+              <span class="cb-emoji"     id="rogers-emoji">⏳</span>
+              <span class="cb-temp-main" id="rogers-temp-main">--°F</span>
+              <span class="cb-temp-sub"  id="rogers-temp-sub">--°C</span>
+            </div>
+            <div class="cb-desc" id="rogers-desc">Loading…</div>
+            <div class="cb-hl"><span class="cb-hi" id="rogers-hi"></span><span class="cb-lo" id="rogers-lo"></span></div>
+            <div class="cb-extra" id="rogers-extra"></div>
+          </div>
+          <div class="cb-right"><div id="rogers-arc"></div><div class="cb-tod-label" id="rogers-tod"></div><div class="cb-sunrises" id="rogers-sunrises"></div></div>
+        </div>
+        <div class="mini-strip" id="rogers-mini"></div>
+      </div>
+
+      <div class="city-block" id="seoul-block">
+        <div class="cb-header">
+          <span class="cb-name">Seoul, KR</span>
+          <span class="cb-date" id="usd-krw" style="font-size:9px"></span>
+        </div>
+        <div class="cb-body">
+          <div class="cb-left">
+            <div class="cb-time24" id="seoul-time24">--:--</div>
+            <div class="cb-time12" id="seoul-time12">--:-- --</div>
+            <div class="cb-temp-row">
+              <span class="cb-emoji"     id="seoul-emoji">⏳</span>
+              <span class="cb-temp-main" id="seoul-temp-main">--°C</span>
+              <span class="cb-temp-sub"  id="seoul-temp-sub">--°F</span>
+            </div>
+            <div class="cb-desc" id="seoul-desc">Loading…</div>
+            <div class="cb-hl"><span class="cb-hi" id="seoul-hi"></span><span class="cb-lo" id="seoul-lo"></span></div>
+            <div class="cb-extra" id="seoul-extra"></div>
+          </div>
+          <div class="cb-right"><div id="seoul-arc"></div><div class="cb-tod-label" id="seoul-tod"></div><div class="cb-sunrises" id="seoul-sunrises"></div></div>
+        </div>
+        <div class="mini-strip" id="seoul-mini"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── ALERTS STRIP (NWS weather alerts only) ─── -->
+  <div id="alerts-strip"></div>
+
+  <!-- ─── LOCAL INFO GRID ─── -->
+  <div id="local-grid">
+
+    <!-- Sky & Space (wider — has APOD) -->
+    <div class="panel" style="flex:2;min-width:340px">
+      <h2>Sky &amp; Space</h2>
+      <div class="lc-cards">
+        <div class="local-card" id="moon-card">
+          <div class="local-card-title">Moon</div>
+          <div id="moon-display" style="display:flex;align-items:center;gap:5px">
+            <span id="moon-emoji" style="font-size:22px">🌑</span>
+            <span id="moon-name" style="font-size:11px;color:#a1a1aa">--</span>
+          </div>
+        </div>
+        <div class="local-card" id="iss-card">
+          <div class="local-card-title">ISS — Distance from Tulsa</div>
+          <div id="iss-dist" class="iss-dist" style="color:#a1a1aa">--</div>
+          <div id="iss-sub" style="font-size:9px;color:#52525b;margin-top:3px">Loading…</div>
+        </div>
+        <div class="local-card" id="kp-card">
+          <div class="local-card-title">Kp Index — Aurora</div>
+          <div id="kp-val" class="kp-val" style="color:#a1a1aa">--</div>
+          <div id="kp-label" style="font-size:9px;color:#52525b;margin-top:3px">Loading…</div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="apod-card">
+          <div class="local-card-title">Astronomy Picture of the Day</div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <img id="apod-img" style="width:90px;height:68px;object-fit:cover;border-radius:4px;flex-shrink:0;display:none" alt="APOD">
+            <div>
+              <div id="apod-title" style="font-size:11px;font-weight:500;color:#e4e4e7;margin-bottom:3px">Loading…</div>
+              <div id="apod-desc" style="font-size:9px;color:#71717a;line-height:1.5"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tulsa Local -->
+    <div class="panel" style="flex:1.5;min-width:260px">
+      <h2>Tulsa Local</h2>
+      <div class="lc-cards">
+        <div class="local-card" id="river-card">
+          <div class="local-card-title">Arkansas River</div>
+          <div id="river-level" class="river-level" style="color:#a1a1aa">--ft</div>
+          <div id="river-stage" class="river-label">Loading…</div>
+        </div>
+        <div class="local-card" id="tul-card">
+          <div class="local-card-title">TUL Airport</div>
+          <div id="tul-status" style="font-size:11px;font-weight:600;color:#a1a1aa;margin-top:2px">Loading…</div>
+          <div id="tul-detail" style="font-size:9px;color:#71717a;margin-top:3px"></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="traffic-card">
+          <div class="local-card-title">Traffic Advisories</div>
+          <div id="traffic-list"><div class="traffic-placeholder">Add your routes to filter ODOT advisories</div></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%">
+          <div class="local-card-title">Earthquakes — 300mi radius (M2.5+)</div>
+          <div id="quake-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Oklahoma -->
+    <div class="panel" style="flex:1;min-width:200px">
+      <h2>Oklahoma</h2>
+      <div class="lc-cards">
+        <div class="local-card" id="fire-card">
+          <div class="local-card-title">Fire Weather</div>
+          <div id="fire-status" style="font-size:11px;font-weight:600;color:#a1a1aa;margin-top:2px">Loading…</div>
+          <div id="fire-detail" style="font-size:9px;color:#71717a;margin-top:3px"></div>
+        </div>
+        <div class="local-card" id="reservoir-card">
+          <div class="local-card-title">Reservoirs</div>
+          <div id="reservoir-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="okleg-card">
+          <div class="local-card-title">Legislature</div>
+          <div id="okleg-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily -->
+    <div class="panel" style="flex:1.5;min-width:260px">
+      <h2>Daily</h2>
+      <div class="lc-cards">
+        <div class="local-card" id="wotd-card">
+          <div class="local-card-title">Word of the Day</div>
+          <div id="wotd-word" style="font-size:15px;font-weight:300;color:#e4e4e7;margin-bottom:3px">--</div>
+          <div id="wotd-def" style="font-size:9px;color:#71717a;line-height:1.4"></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="otd-card">
+          <div class="local-card-title">On This Day</div>
+          <div id="otd-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coastal -->
+    <div class="panel" style="flex:0.8;min-width:160px">
+      <h2>Coastal — Boothbay</h2>
+      <div class="lc-cards">
+        <div class="local-card" style="flex:1 1 100%" id="tide-card">
+          <div class="local-card-title">Tides</div>
+          <div id="tide-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── TULSA LOCAL NEWS ─── -->
+  <div class="panel" id="tulsa-news-panel">
+    <div class="news-header">
+      <h2>Tulsa &amp; Oklahoma</h2>
+      <span id="tn-updated"></span>
+    </div>
+    <div class="tn-cols">
+      <div class="tn-col" id="tn-col-a"><div class="hl-err">Loading local news…</div></div>
+      <div class="tn-col" id="tn-col-b"></div>
+    </div>
+  </div>
+
+  <!-- ─── HEADLINES ─── -->
+  <div class="panel" id="headlines-panel">
+    <div class="news-header">
+      <h2>Global Coverage</h2>
+      <span id="hl-updated"></span>
+    </div>
+    <div class="hl-cols">
+      <div class="hl-col" id="hl-col-a"><div class="hl-err">Gathering world coverage…</div></div>
+      <div class="hl-col" id="hl-col-b"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ─── WMO ────────────────────────────────────────────────────────
+const WMO = {
+  0:['☀️','Clear'], 1:['🌤','Mostly clear'], 2:['⛅','Partly cloudy'], 3:['☁️','Overcast'],
+  45:['🌫','Foggy'], 48:['🌫','Icy fog'],
+  51:['🌦','Lt drizzle'], 53:['🌦','Drizzle'], 55:['🌧','Hvy drizzle'],
+  61:['🌧','Lt rain'], 63:['🌧','Rain'], 65:['🌧','Hvy rain'],
+  71:['🌨','Lt snow'], 73:['🌨','Snow'], 75:['❄️','Hvy snow'],
+  80:['🌦','Showers'], 81:['🌧','Hvy showers'], 82:['⛈','V hvy showers'],
+  95:['⛈','T-storm'], 96:['⛈','T-storm+hail'], 99:['⛈','T-storm+hail'],
+};
+function wmo(code) { return WMO[code] || ['🌡','--']; }
+
+const CITIES = [
+  { id:'tulsa',  lat:36.154,  lon:-96.0089, tz:'America/Chicago' },
+  { id:'rogers', lat:36.332,  lon:-94.1185, tz:'America/Chicago' },
+  { id:'seoul',       lat:37.5665, lon:126.978,  tz:'Asia/Seoul'      },
+  { id:'springfield', lat:37.2090, lon:-93.2923, tz:'America/Chicago'  },
+  { id:'boothbay',    lat:43.8526, lon:-69.6289, tz:'America/New_York' },
+];
+
+// ─── Clock complication ─────────────────────────────────────────
+function makeClockComp(sunriseTs, sunsetTs, nowTs, tz) {
+  const S=64, cx=32, cy=32, r=24;
+  function tsFrac(ts) {
+    const sv = new Date(ts).toLocaleString('sv',{timeZone:tz});
+    const [h,m,s] = (sv.split(' ')[1]||'00:00:00').split(':').map(Number);
+    return (h*3600+m*60+(s||0))/86400;
+  }
+  function fxy(frac) {
+    const θ=frac*2*Math.PI;
+    return [cx+r*Math.sin(θ), cy-r*Math.cos(θ)];
+  }
+  const rise=tsFrac(sunriseTs), set=tsFrac(sunsetTs), now=tsFrac(nowTs);
+  const [rx,ry]=fxy(rise), [sx,sy]=fxy(set), [nx,ny]=fxy(now);
+  const large=(set-rise)>0.5?1:0;
+  const isDay=now>=rise&&now<=set;
+  const dot=isDay?'#fbbf24':'#94a3b8', icon=isDay?'☀':'☾';
+  const ticks=[0,.25,.5,.75].map(f=>{
+    const θ=f*2*Math.PI;
+    const [x1,y1]=[cx+(r-4)*Math.sin(θ),cy-(r-4)*Math.cos(θ)];
+    const [x2,y2]=[cx+(r+3)*Math.sin(θ),cy-(r+3)*Math.cos(θ)];
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#2d2d3a" stroke-width="1.5" stroke-linecap="round"/>`;
+  }).join('');
+  return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e2030" stroke-width="5"/>
+    <path d="M ${rx.toFixed(1)} ${ry.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${sx.toFixed(1)} ${sy.toFixed(1)}"
+          fill="none" stroke="#b45309" stroke-width="5" opacity="0.65" stroke-linecap="round"/>
+    ${ticks}
+    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="7" fill="${dot}" opacity="0.95"/>
+    <text x="${nx.toFixed(1)}" y="${(ny+0.5).toFixed(1)}" text-anchor="middle" dominant-baseline="middle"
+          font-size="9" style="pointer-events:none">${icon}</text>
+  </svg>`;
+}
+
+// ─── Time helpers ───────────────────────────────────────────────
+function t24(tz){return new Date().toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});}
+function t12(tz){return new Date().toLocaleTimeString('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit',hour12:true});}
+function localHour(tz){return parseInt(new Date().toLocaleString('en-US',{timeZone:tz,hour:'numeric',hour12:false}));}
+function todPeriod(h){
+  if(h<5||h>=22)return['Night','night'];
+  if(h<9)return['Dawn','dawn'];
+  if(h<18)return['Day','day'];
+  return['Dusk','dawn'];
+}
+
+// ─── UV helpers ─────────────────────────────────────────────────
+function uvClass(v){
+  if(v===0)return['UV 0','uv-0'];
+  if(v<=2) return['UV '+v,'uv-low'];
+  if(v<=5) return['UV '+v,'uv-mod'];
+  if(v<=7) return['UV '+v,'uv-high'];
+  if(v<=10)return['UV '+v,'uv-vhi'];
+  return['UV '+v,'uv-ext'];
+}
+function uvLabel(v){
+  if(v===0)return'None';
+  if(v<=2)return'Low'; if(v<=5)return'Moderate';
+  if(v<=7)return'High'; if(v<=10)return'Very High';
+  return'Extreme';
+}
+
+// ─── Env quality helpers ────────────────────────────────────────
+function o3Info(ugm3) {
+  const ppb = ugm3 / 1.96;
+  if(ppb < 55) return [ppb.toFixed(0), '#6ee7b7', 'Good', false];
+  if(ppb < 70) return [ppb.toFixed(0), '#fcd34d', 'Moderate', false];
+  if(ppb < 85) return [ppb.toFixed(0), '#f97316', 'Action Day', true];
+  if(ppb < 105) return [ppb.toFixed(0), '#fca5a5', 'Unhealthy', true];
+  return [ppb.toFixed(0), '#c084fc', 'V.Unhealthy', true];
+}
+function dewInfo(f) {
+  if(f < 55) return ['#6ee7b7', 'Comfy'];
+  if(f < 60) return ['#a3e635', 'OK'];
+  if(f < 65) return ['#fcd34d', 'Humid'];
+  if(f < 70) return ['#fdba74', 'Sticky'];
+  return ['#fca5a5', 'Oppressive'];
+}
+function visInfo(m) {
+  const miles = m / 1609;
+  if(miles > 10) return [miles.toFixed(0)+'mi', '#6ee7b7', 'Clear'];
+  if(miles > 5)  return [miles.toFixed(1)+'mi', '#a3e635', 'Good'];
+  if(miles > 2)  return [miles.toFixed(1)+'mi', '#fcd34d', 'Hazy'];
+  if(miles > 0.5) return [miles.toFixed(1)+'mi', '#fdba74', 'Poor'];
+  return [(m/1609).toFixed(2)+'mi', '#fca5a5', 'V.Poor'];
+}
+
+// ─── Alerts ─────────────────────────────────────────────────────
+window.alertO3 = false;
+window.alertBurnBan = false;
+window.nwsAlerts = [];
+
+function renderAlerts() {
+  const strip = document.getElementById('alerts-strip');
+  const cards = [];
+  // NWS weather alerts only in the strip
+  window.nwsAlerts.forEach(a => {
+    const sev = a.severity || '';
+    const urg = a.urgency || '';
+    let cls = 'alert-minor';
+    if(sev === 'Extreme') cls = 'alert-extreme';
+    else if(sev === 'Severe' && urg === 'Immediate') cls = 'alert-extreme';
+    else if(sev === 'Severe') cls = 'alert-severe';
+    cards.push(`<div class="alert-card ${cls}" title="${a.headline || ''}">⚠️ ${a.event}</div>`);
+  });
+  strip.innerHTML = cards.join('');
+  strip.style.display = cards.length ? 'flex' : 'none';
+
+  // Ozone + burn ban live in the status badges above Tulsa
+  const ozEl = document.getElementById('status-ozone');
+  const bnEl = document.getElementById('status-burnban');
+  if (ozEl) {
+    ozEl.textContent = window.alertO3 ? '⚠️ Ozone Action Day' : 'Ozone: OK';
+    ozEl.className = 'status-badge' + (window.alertO3 ? ' active-ozone' : '');
+  }
+  if (bnEl) {
+    bnEl.textContent = window.alertBurnBan ? '🔥 Burn Ban Active' : 'Burn Ban: None';
+    bnEl.className = 'status-badge' + (window.alertBurnBan ? ' active-burn' : '');
+  }
+}
+
+// ─── Clock tick ─────────────────────────────────────────────────
+let weatherData = {};
+let hlUpdateTime = null;
+
+function tickClocks() {
+  const now = new Date(), ts = now.getTime();
+  document.getElementById('tulsa-time24').textContent = t24('America/Chicago');
+  document.getElementById('tulsa-time12').textContent = t12('America/Chicago');
+  document.getElementById('tulsa-date').textContent = now.toLocaleDateString('en-US',{timeZone:'America/Chicago',weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('rogers-time24').textContent = t24('America/Chicago');
+  document.getElementById('rogers-time12').textContent = t12('America/Chicago');
+  document.getElementById('seoul-time24').textContent = t24('Asia/Seoul');
+  document.getElementById('seoul-time12').textContent = t12('Asia/Seoul');
+  document.getElementById('springfield-time24').textContent = t24('America/Chicago');
+  document.getElementById('springfield-time12').textContent = t12('America/Chicago');
+  document.getElementById('springfield-date').textContent = now.toLocaleDateString('en-US',{timeZone:'America/Chicago',weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('boothbay-time24').textContent = t24('America/New_York');
+  document.getElementById('boothbay-time12').textContent = t12('America/New_York');
+  document.getElementById('boothbay-date').textContent = now.toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric'});
+  // Seoul bg
+  const [sp] = todPeriod(localHour('Asia/Seoul'));
+  document.getElementById('seoul-block').className = 'city-block '+(sp==='Night'?'seoul-night':sp==='Day'?'seoul-day':'seoul-dawn');
+  // Complications + sunrise/sunset text
+  ['tulsa','rogers','seoul'].forEach(id => {
+    if(weatherData[id]) {
+      const d = weatherData[id];
+      document.getElementById(id+'-arc').innerHTML = makeClockComp(d.sunrise, d.sunset, ts, d.tz);
+      const sunEl = document.getElementById(id+'-sunrises');
+      if(sunEl) {
+        const fmt = t => new Date(t).toLocaleTimeString('en-US',{timeZone:d.tz,hour:'numeric',minute:'2-digit',hour12:true}).replace(' ','').toLowerCase();
+        sunEl.textContent = '↑'+fmt(d.sunrise)+'  ↓'+fmt(d.sunset);
+      }
+    }
+  });
+  // Moon phase
+  const [moonEmoji, moonName] = getMoonPhase();
+  const mEmojiEl = document.getElementById('moon-emoji');
+  const mNameEl  = document.getElementById('moon-name');
+  if(mEmojiEl) mEmojiEl.textContent = moonEmoji;
+  if(mNameEl)  mNameEl.textContent  = moonName;
+  // Headlines last-updated
+  const hlEl = document.getElementById('hl-updated');
+  if(hlEl && hlUpdateTime) {
+    const m = Math.round((ts - hlUpdateTime) / 60000);
+    hlEl.textContent = m < 2 ? '· just updated' : m < 60 ? `· ${m}m ago` : `· ${Math.round(m/60)}h ago`;
+  }
+}
+setInterval(tickClocks, 10000);
+tickClocks();
+
+// ─── Fetch weather ──────────────────────────────────────────────
+let envData = { uv: null, hum: null };
+
+async function fetchCity(city) {
+  const days = city.id === 'tulsa' ? 10 : 2;
+  const url = `https://api.open-meteo.com/v1/forecast`
+    +`?latitude=${city.lat}&longitude=${city.lon}`
+    +`&current_weather=true`
+    +`&hourly=temperature_2m,precipitation_probability,weathercode,uv_index,relativehumidity_2m,apparent_temperature,dewpoint_2m,visibility`
+    +`&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weathercode,precipitation_probability_max`
+    +`&temperature_unit=fahrenheit`
+    +`&timezone=${encodeURIComponent(city.tz)}`
+    +`&forecast_days=${days}`;
+  const data = await fetch(url).then(r => r.json());
+  const cw = data.current_weather, daily = data.daily;
+  const tempF = Math.round(cw.temperature);
+  const tempC = Math.round((cw.temperature - 32) * 5 / 9);
+  const [emoji, desc] = wmo(cw.weathercode);
+
+  weatherData[city.id] = {
+    sunrise: new Date(daily.sunrise[0]).getTime(),
+    sunset:  new Date(daily.sunset[0]).getTime(),
+    tz: city.tz,
+    dailySunrise: daily.sunrise,
+    dailySunset:  daily.sunset,
+    dailyTime:    daily.time
+  };
+
+  // Current hour index
+  const nowSv = new Date().toLocaleString('sv',{timeZone:city.tz}).slice(0,13).replace(' ','T');
+  const si = Math.max(0, data.hourly.time.findIndex(t => t.startsWith(nowSv)));
+
+  if(city.id === 'tulsa') {
+    document.getElementById('tulsa-emoji').textContent = emoji;
+    document.getElementById('tulsa-temp-main').textContent = tempF+'°F';
+    document.getElementById('tulsa-temp-sub').textContent = tempC+'°C';
+    document.getElementById('tulsa-desc').textContent = desc;
+    document.getElementById('tulsa-hi').textContent = 'H '+Math.round(daily.temperature_2m_max[0])+'°F';
+    document.getElementById('tulsa-lo').textContent = 'L '+Math.round(daily.temperature_2m_min[0])+'°F';
+    document.getElementById('tulsa-wind').textContent = Math.round(cw.windspeed)+' mph wind';
+
+    // Golden hour
+    const fmtGH = ts => new Date(ts).toLocaleTimeString('en-US',
+      {timeZone:'America/Chicago', hour:'numeric', minute:'2-digit', hour12:true})
+      .replace(' ','').toLowerCase();
+    const riseTs = new Date(daily.sunrise[0]).getTime();
+    const setTs  = new Date(daily.sunset[0]).getTime();
+    document.getElementById('tulsa-golden').innerHTML =
+      `<span class="gh-am">🌅 ${fmtGH(riseTs)}–${fmtGH(riseTs+3600000)}</span>`
+      +`<span class="gh-pm">🌇 ${fmtGH(setTs-3600000)}–${fmtGH(setTs)}</span>`;
+
+    // Store env data
+    envData.uv      = Math.round(data.hourly.uv_index?.[si] ?? 0);
+    envData.hum     = Math.round(data.hourly.relativehumidity_2m?.[si] ?? 0);
+    envData.feelsF  = Math.round(data.hourly.apparent_temperature?.[si] ?? tempF);
+    envData.dewF    = Math.round(data.hourly.dewpoint_2m?.[si] ?? 0);
+    envData.visM    = data.hourly.visibility?.[si] ?? 16000;
+    renderEnv();
+    renderCityExtra('tulsa', envData.feelsF, envData.dewF, envData.hum, false);
+    renderMiniHourly('tulsa-mini', data, si, city.tz);
+
+    // Wide hourly strip (every 1h, next 16h)
+    const row = document.getElementById('tulsa-hr-row');
+    row.innerHTML = '';
+    for(let i=si; i<si+16 && i<data.hourly.time.length; i++) {
+      const t = new Date(data.hourly.time[i]);
+      const hr = t.toLocaleTimeString('en-US',{timeZone:city.tz,hour:'numeric',hour12:true}).replace(':00','').toLowerCase();
+      const tmp = Math.round(data.hourly.temperature_2m[i]);
+      const pop = data.hourly.precipitation_probability[i] || 0;
+      const hum = Math.round(data.hourly.relativehumidity_2m?.[i] ?? 0);
+      const uv  = Math.round(data.hourly.uv_index?.[i] ?? 0);
+      const [ic] = wmo(data.hourly.weathercode[i]);
+      const [uvLbl, uvCls] = uvClass(uv);
+      const col = document.createElement('div');
+      col.className = 'hr-item'+(i===si?' now':'');
+      col.innerHTML = `<div class="hr-lbl">${hr}</div>`
+        +`<div class="hr-icon">${ic}</div>`
+        +`<div class="hr-temp">${tmp}°</div>`
+        +`<div class="hr-hum">${hum}%</div>`
+        +`<div class="hr-uv ${uvCls}">${uvLbl}</div>`
+        +`<div class="hr-pop" style="opacity:${pop>5?1:0.12};width:${Math.max(4,pop*0.36)}px"></div>`;
+      row.appendChild(col);
+    }
+
+    // 10-day forecast (with sunrise/sunset sub-line)
+    const allHi = daily.temperature_2m_max, allLo = daily.temperature_2m_min;
+    const minT = Math.min(...allLo), maxT = Math.max(...allHi), range = maxT - minT || 1;
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const fmtSun = iso => new Date(iso).toLocaleTimeString('en-US',
+      {timeZone:'America/Chicago', hour:'numeric', minute:'2-digit', hour12:true})
+      .replace(' ','').toLowerCase();
+    const fc = document.getElementById('forecast-list'); fc.innerHTML = '';
+    for(let i=0; i<daily.time.length; i++) {
+      const d = new Date(daily.time[i]+'T12:00:00');
+      const day = i === 0 ? 'Today' : dayNames[d.getDay()];
+      const hi = Math.round(allHi[i]), lo = Math.round(allLo[i]);
+      const pop = daily.precipitation_probability_max[i] || 0;
+      const [ic] = wmo(daily.weathercode[i]);
+      const loFrac = (lo - minT) / range, hiFrac = (hi - minT) / range;
+      const rise = daily.sunrise?.[i] ? fmtSun(daily.sunrise[i]) : '';
+      const set  = daily.sunset?.[i]  ? fmtSun(daily.sunset[i])  : '';
+      let dur = '';
+      if (daily.sunrise?.[i] && daily.sunset?.[i]) {
+        const mins = Math.round((new Date(daily.sunset[i]) - new Date(daily.sunrise[i])) / 60000);
+        dur = Math.floor(mins/60)+'h'+String(mins%60).padStart(2,'0')+'m';
+      }
+      const row = document.createElement('div');
+      row.className = 'fc-row'+(i===0?' fc-today':'');
+      row.innerHTML = `<span class="fc-day">${day}</span>`
+        +`<span class="fc-icon">${ic}</span>`
+        +`<div class="fc-bar"><div class="fc-bar-fill" style="margin-left:${(loFrac*100).toFixed(0)}%;width:${((hiFrac-loFrac)*100).toFixed(0)}%"></div></div>`
+        +`<span class="fc-hi">${hi}°</span><span class="fc-lo">${lo}°</span>`
+        +`<span class="fc-pop">${pop>10?pop+'%':''}</span>`
+        +(rise ? `<span class="fc-suns"><span class="fc-sr">↑${rise}</span><span class="fc-ss">↓${set}</span><span class="fc-dur">${dur}</span></span>` : '');
+      fc.appendChild(row);
+    }
+  }
+
+  if(city.id === 'rogers') {
+    document.getElementById('rogers-emoji').textContent = emoji;
+    document.getElementById('rogers-temp-main').textContent = tempF+'°F';
+    document.getElementById('rogers-temp-sub').textContent = tempC+'°C';
+    document.getElementById('rogers-desc').textContent = desc;
+    document.getElementById('rogers-hi').textContent = 'H '+Math.round(daily.temperature_2m_max[0])+'°F';
+    document.getElementById('rogers-lo').textContent = 'L '+Math.round(daily.temperature_2m_min[0])+'°F';
+    renderMiniHourly('rogers-mini', data, si, city.tz);
+    const rFeels = Math.round(data.hourly.apparent_temperature?.[si] ?? tempF);
+    const rDew   = Math.round(data.hourly.dewpoint_2m?.[si] ?? 0);
+    const rHum   = Math.round(data.hourly.relativehumidity_2m?.[si] ?? 0);
+    renderCityExtra('rogers', rFeels, rDew, rHum, false);
+  }
+
+  if(city.id === 'seoul') {
+    document.getElementById('seoul-emoji').textContent = emoji;
+    document.getElementById('seoul-temp-main').textContent = tempC+'°C';
+    document.getElementById('seoul-temp-sub').textContent = tempF+'°F';
+    document.getElementById('seoul-desc').textContent = desc;
+    document.getElementById('seoul-hi').textContent = 'H '+Math.round((daily.temperature_2m_max[0]-32)*5/9)+'°C';
+    document.getElementById('seoul-lo').textContent = 'L '+Math.round((daily.temperature_2m_min[0]-32)*5/9)+'°C';
+    renderMiniHourly('seoul-mini', data, si, city.tz);
+    const sFeels = Math.round(data.hourly.apparent_temperature?.[si] ?? tempF);
+    const sDew   = Math.round(data.hourly.dewpoint_2m?.[si] ?? 0);
+    const sHum   = Math.round(data.hourly.relativehumidity_2m?.[si] ?? 0);
+    renderCityExtra('seoul', sFeels, sDew, sHum, true);
+  }
+  if(city.id === 'springfield' || city.id === 'boothbay') {
+    document.getElementById(city.id+'-emoji').textContent = emoji;
+    document.getElementById(city.id+'-temp-main').textContent = tempF+'°F';
+    document.getElementById(city.id+'-temp-sub').textContent = tempC+'°C';
+    document.getElementById(city.id+'-desc').textContent = desc;
+    document.getElementById(city.id+'-hi').textContent = 'H '+Math.round(daily.temperature_2m_max[0])+'°F';
+    document.getElementById(city.id+'-lo').textContent = 'L '+Math.round(daily.temperature_2m_min[0])+'°F';
+  }
+  tickClocks();
+}
+
+// ─── Mini 3-hour strip (Rogers / Seoul) ─────────────────────────
+function renderMiniHourly(elId, data, si, tz) {
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = '';
+  for(let i=si; i<si+12 && i<data.hourly.time.length; i+=3) {
+    const t = new Date(data.hourly.time[i]);
+    const hr = t.toLocaleTimeString('en-US',{timeZone:tz,hour:'numeric',hour12:true}).replace(':00','').toLowerCase();
+    const tmp = Math.round(data.hourly.temperature_2m[i]);
+    const pop = data.hourly.precipitation_probability[i] || 0;
+    const [ic] = wmo(data.hourly.weathercode[i]);
+    const col = document.createElement('div');
+    col.className = 'mhr-col'+(i===si?' now':'');
+    col.innerHTML = `<div class="mhr-t">${hr}</div>`
+      +`<div class="mhr-ic">${ic}</div>`
+      +`<div class="mhr-tp">${tmp}°</div>`
+      +`<div class="mhr-pp" style="opacity:${pop>5?0.9:0.1}"></div>`;
+    el.appendChild(col);
+  }
+}
+
+// ─── Moon phase (pure JS, no API) ────────────────────────────────
+function getMoonPhase() {
+  const JD = Date.now() / 86400000 + 2440587.5;
+  const days = ((JD - 2451550.259) % 29.53059 + 29.53059) % 29.53059;
+  const p = days / 29.53059;
+  if(p < 0.0625 || p >= 0.9375) return ['🌑','New Moon'];
+  if(p < 0.1875) return ['🌒','Waxing Crescent'];
+  if(p < 0.3125) return ['🌓','First Quarter'];
+  if(p < 0.4375) return ['🌔','Waxing Gibbous'];
+  if(p < 0.5625) return ['🌕','Full Moon'];
+  if(p < 0.6875) return ['🌖','Waning Gibbous'];
+  if(p < 0.8125) return ['🌗','Last Quarter'];
+  return ['🌘','Waning Crescent'];
+}
+
+// ─── NWS active weather alerts ───────────────────────────────────
+async function fetchNWSAlerts() {
+  try {
+    const data = await Promise.race([
+      fetch('https://api.weather.gov/alerts/active?point=36.154,-96.0089',
+        {headers:{'Accept':'application/geo+json','User-Agent':'startpage/1.0'}}).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    window.nwsAlerts = (data.features||[]).map(f=>({
+      event:    f.properties.event,
+      headline: f.properties.headline||'',
+      severity: f.properties.severity,
+      urgency:  f.properties.urgency,
+    }));
+    renderAlerts();
+  } catch(e) { window.nwsAlerts = []; renderAlerts(); }
+}
+
+// ─── Arkansas River gauge (USGS site 07164500) ──────────────────
+async function fetchRiver() {
+  try {
+    const url = 'https://waterservices.usgs.gov/nwis/iv/?sites=07164500&parameterCd=00065&format=json';
+    const data = await Promise.race([fetch(url).then(r=>r.json()), new Promise((_,rej)=>setTimeout(rej,8000))]);
+    const val = parseFloat(data.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value ?? 'NaN');
+    if(isNaN(val)) return;
+    // Action stage 14ft, flood stage 18ft, major 22ft (NWS Tulsa)
+    const [stageLabel, stageColor] =
+      val < 8  ? ['Low','#6ee7b7'] :
+      val < 14 ? ['Normal','#a3e635'] :
+      val < 18 ? ['Action Stage','#fcd34d'] :
+      val < 22 ? ['Flood Stage','#fca5a5'] :
+                 ['Major Flood','#c084fc'];
+    const lvlEl = document.getElementById('river-level');
+    lvlEl.textContent = val.toFixed(1)+'ft';
+    lvlEl.style.color = stageColor;
+    document.getElementById('river-stage').textContent = stageLabel;
+  } catch(e) { document.getElementById('river-stage').textContent = 'Unavailable'; }
+}
+
+// ─── USGS Earthquakes ────────────────────────────────────────────
+async function fetchEarthquakes() {
+  try {
+    const url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson'
+      +'&latitude=36.154&longitude=-96.0089&maxradiuskm=300&minmagnitude=2.5&limit=6&orderby=time';
+    const data = await Promise.race([fetch(url).then(r=>r.json()), new Promise((_,rej)=>setTimeout(rej,8000))]);
+    const quakes = data.features || [];
+    const list = document.getElementById('quake-list');
+    if(!quakes.length) {
+      list.innerHTML = '<div style="font-size:11px;color:#3f3f46">None M2.5+ in past week nearby</div>';
+      return;
+    }
+    list.innerHTML = quakes.map(q => {
+      const p = q.properties;
+      const mag = p.mag.toFixed(1);
+      const place = (p.place||'').replace(/^\d+\s*km\s+\w+\s+of\s+/i,'');
+      const age = timeAgo(new Date(p.time).toISOString());
+      const magCol = mag>=4?'#fca5a5':mag>=3?'#fcd34d':'#71717a';
+      return `<div class="quake-item"><span class="quake-mag" style="color:${magCol}">M${mag}</span><span class="quake-place">${place}</span><span class="quake-age">${age}</span></div>`;
+    }).join('');
+  } catch(e) { document.getElementById('quake-list').innerHTML = '<div style="font-size:11px;color:#3f3f46">Unavailable</div>'; }
+}
+
+// ─── USD/KRW exchange rate ────────────────────────────────────────
+async function fetchExchangeRate() {
+  try {
+    const data = await Promise.race([
+      fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const krw = Math.round(data.rates?.KRW);
+    if(krw) document.getElementById('usd-krw').textContent = '₩'+krw.toLocaleString()+'/USD';
+  } catch(e) {}
+}
+
+// ─── Comfort label for under the clock complication ─────────────
+function comfortLabel(feelsF, dewF) {
+  if(feelsF <= 20) return ['Brutal cold', '#bae6fd'];
+  if(feelsF <= 32) return ['Freezing',    '#93c5fd'];
+  if(feelsF <= 45) return ['Bitter',      '#a5f3fc'];
+  if(feelsF <= 55) return ['Cold',        '#6ee7b7'];
+  if(feelsF <= 65) return ['Brisk',       '#a3e635'];
+  // warm range — dew point drives the comfort word
+  if(feelsF >= 105)               return ['Dangerous',  '#c084fc'];
+  if(feelsF >= 95 && dewF >= 70)  return ['Oppressive', '#fca5a5'];
+  if(feelsF >= 90 && dewF >= 65)  return ['Miserable',  '#fca5a5'];
+  const [dewCol, dewLbl] = dewInfo(dewF);  // Comfy / OK / Humid / Sticky / Oppressive
+  if(dewLbl === 'Comfy' && feelsF < 80)   return ['Nice',    '#6ee7b7'];
+  if(dewLbl === 'Comfy')                  return ['Pleasant','#a3e635'];
+  return [dewLbl, dewCol];
+}
+
+// ─── City block extra row (feels like · dew · humidity) ─────────
+function renderCityExtra(id, feelsF, dewF, hum, isCelsius) {
+  const el = document.getElementById(id + '-extra');
+  if(!el) return;
+
+  // Feels like: pick color based on how far from actual temp this matters
+  // Use °C as primary for Seoul, °F for Tulsa/Rogers
+  let feelsDisplay, dewDisplay;
+  if(isCelsius) {
+    const feelsC = Math.round((feelsF - 32) * 5/9);
+    const dewC   = Math.round((dewF   - 32) * 5/9);
+    feelsDisplay = feelsC + '°C';
+    dewDisplay   = dewC   + '°C';
+  } else {
+    feelsDisplay = feelsF + '°F';
+    dewDisplay   = dewF   + '°F';
+  }
+
+  // Color code feels: warm (orange) / cold (blue) / neutral (gray)
+  const feelsCls = feelsF >= 85 ? 'cb-eval-hi' : feelsF <= 45 ? 'cb-eval-lo' : 'cb-eval';
+  // Color code dew point (comfort) using dewInfo
+  const [dewCol] = dewInfo(dewF);
+
+  // Label: "Heat Index" when hot & feels > actual, "Wind Chill" when cold & feels < actual, else "Feels"
+  // We don't have actualF here so just always label "Feels" — apparent_temp handles the math correctly
+  el.innerHTML =
+    `<span class="cb-eitem"><span class="cb-elbl">Feels</span><span class="${feelsCls}">${feelsDisplay}</span></span>`
+    + `<span class="cb-esep">·</span>`
+    + `<span class="cb-eitem"><span class="cb-elbl">DP</span><span class="cb-eval" style="color:${dewCol}">${dewDisplay}</span></span>`
+    + `<span class="cb-esep">·</span>`
+    + `<span class="cb-eitem"><span class="cb-elbl">RH</span><span class="cb-eval">${hum}%</span></span>`;
+
+  // Comfort label under the clock complication
+  const todEl = document.getElementById(id + '-tod');
+  if(todEl) {
+    const [label, color] = comfortLabel(feelsF, dewF);
+    todEl.textContent = label;
+    todEl.style.color = color;
+  }
+}
+
+// ─── Render env panel ────────────────────────────────────────────
+function aqiColor(a) {
+  if(a<=50)  return ['#6ee7b7','Good'];
+  if(a<=100) return ['#fcd34d','Moderate'];
+  if(a<=150) return ['#fdba74','Sensitive'];
+  if(a<=200) return ['#fca5a5','Unhealthy'];
+  return ['#c084fc','V.Unhealthy'];
+}
+function pm25Color(v) {
+  if(v<=12) return '#6ee7b7'; if(v<=35) return '#fcd34d';
+  if(v<=55) return '#fdba74'; if(v<=150) return '#fca5a5';
+  return '#c084fc';
+}
+function pollenClass(v, isRag) {
+  const hi = isRag ? 500 : 200;
+  if(v<1)  return ['None','pol-none'];
+  if(v<10) return ['Low','pol-low'];
+  if(v<50) return ['Mod','pol-mod'];
+  if(v<hi) return ['High','pol-high'];
+  return ['V.High','pol-vhigh'];
+}
+
+function renderEnv() {
+  if(envData.uv !== null) {
+    const [,cls] = uvClass(envData.uv);
+    const uvEl = document.getElementById('uv-val');
+    uvEl.textContent = envData.uv;
+    const uvColors = {'uv-low':'#6ee7b7','uv-mod':'#fcd34d','uv-high':'#fdba74','uv-vhi':'#fca5a5','uv-ext':'#c084fc','uv-0':'#3f3f46'};
+    uvEl.style.color = uvColors[cls] || '#a1a1aa';
+    document.getElementById('uv-sub').textContent = uvLabel(envData.uv);
+  }
+  if(envData.hum !== null) {
+    document.getElementById('hum-val').textContent = envData.hum+'%';
+    document.getElementById('hum-sub').textContent = envData.hum > 70 ? 'Humid' : envData.hum < 30 ? 'Dry' : 'OK';
+  }
+  if(envData.feelsF !== undefined) {
+    const feelsC = Math.round((envData.feelsF - 32) * 5 / 9);
+    document.getElementById('feels-val').textContent = envData.feelsF+'°F';
+    document.getElementById('feels-sub').textContent = feelsC+'°C';
+  }
+  if(envData.dewF !== undefined) {
+    const [dewCol, dewLbl] = dewInfo(envData.dewF);
+    const dewEl = document.getElementById('dew-val');
+    dewEl.textContent = envData.dewF+'°F';
+    dewEl.style.color = dewCol;
+    document.getElementById('dew-sub').textContent = dewLbl;
+  }
+  if(envData.visM !== undefined) {
+    const [visDist, visCol, visLbl] = visInfo(envData.visM);
+    const visEl = document.getElementById('vis-val');
+    visEl.textContent = visDist;
+    visEl.style.color = visCol;
+    document.getElementById('vis-sub').textContent = visLbl;
+  }
+}
+
+// ─── Fetch air quality / allergy ────────────────────────────────
+async function fetchAllergy() {
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
+    +`?latitude=36.154&longitude=-96.0089`
+    +`&hourly=grass_pollen,ragweed_pollen,birch_pollen,dust,us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone`
+    +`&timezone=America/Chicago&forecast_days=2`;
+  const data = await fetch(url).then(r => r.json());
+  const nowSv = new Date().toLocaleString('sv',{timeZone:'America/Chicago'}).slice(0,13).replace(' ','T');
+  let idx = data.hourly.time.findIndex(t => t.startsWith(nowSv));
+  if(idx < 0) idx = 0;
+
+  const aqi   = Math.round(data.hourly.us_aqi?.[idx] ?? 0);
+  const grass = Math.round(data.hourly.grass_pollen?.[idx] ?? 0);
+  const rag   = Math.round(data.hourly.ragweed_pollen?.[idx] ?? 0);
+  const tree  = Math.round(data.hourly.birch_pollen?.[idx] ?? 0);
+  const dust  = Math.round(data.hourly.dust?.[idx] ?? 0);
+  const pm25  = Math.round((data.hourly.pm2_5?.[idx] ?? 0) * 10) / 10;
+  const pm10  = Math.round(data.hourly.pm10?.[idx] ?? 0);
+  const no2   = Math.round(data.hourly.nitrogen_dioxide?.[idx] ?? 0);
+  const o3raw = data.hourly.ozone?.[idx] ?? 0;
+
+  // AQI
+  const [ac, al] = aqiColor(aqi);
+  document.getElementById('aqi-val').textContent = aqi;
+  document.getElementById('aqi-val').style.color = ac;
+  document.getElementById('aqi-sub').textContent = al;
+
+  // Ozone
+  const [o3ppb, o3col, o3lbl, o3alert] = o3Info(o3raw);
+  document.getElementById('o3-val').textContent = o3ppb;
+  document.getElementById('o3-val').style.color = o3col;
+  document.getElementById('o3-sub').textContent = o3lbl;
+  window.alertO3 = o3alert;
+  renderAlerts();
+
+  // NO2
+  const no2col = no2 < 40 ? '#6ee7b7' : no2 < 100 ? '#fcd34d' : no2 < 200 ? '#fdba74' : '#fca5a5';
+  document.getElementById('no2-val').textContent = no2;
+  document.getElementById('no2-val').style.color = no2col;
+  document.getElementById('no2-sub').textContent = no2 < 40 ? 'Good' : no2 < 100 ? 'Moderate' : 'Elevated';
+
+  // PM2.5
+  document.getElementById('pm25-val').textContent = pm25;
+  document.getElementById('pm25-val').style.color = pm25Color(pm25);
+  document.getElementById('pm25-sub').textContent = pm25 <= 12 ? 'Good' : pm25 <= 35 ? 'Moderate' : 'Elevated';
+
+  // PM10
+  const pm10col = pm10 < 54 ? '#6ee7b7' : pm10 < 154 ? '#fcd34d' : pm10 < 254 ? '#fdba74' : '#fca5a5';
+  document.getElementById('pm10-val').textContent = pm10;
+  document.getElementById('pm10-val').style.color = pm10col;
+  document.getElementById('pm10-sub').textContent = pm10 < 54 ? 'Good' : pm10 < 154 ? 'Moderate' : 'Elevated';
+
+  // Pollen
+  function setBadge(id, v, isRag) {
+    const el = document.getElementById(id);
+    const [lbl, cls] = pollenClass(v, isRag);
+    el.textContent = lbl; el.className = 'pol-badge '+cls;
+  }
+  setBadge('pol-grass', grass, false);
+  setBadge('pol-ragweed', rag, true);
+  setBadge('pol-tree', tree, false);
+  setBadge('pol-mold', dust, false);
+}
+
+// ─── Burn ban check (Oklahoma Forestry Services) ─────────────────
+async function checkBurnBan() {
+  try {
+    const url = 'https://www.forestry.ok.gov/burn-bans';
+    const json = await Promise.race([
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r => r.json()),
+      new Promise((_,rej) => setTimeout(rej, 8000))
+    ]);
+    const doc = new DOMParser().parseFromString(json.contents, 'text/html');
+    const nodes = Array.from(doc.querySelectorAll('tr,li,td,p,div'));
+    for(const node of nodes) {
+      const txt = node.textContent;
+      if(/tulsa/i.test(txt) && /burn\s*ban|fire\s*ban|open\s*burn/i.test(txt)) {
+        window.alertBurnBan = !/lifted|removed|no ban|expires/i.test(txt);
+        renderAlerts();
+        return;
+      }
+    }
+    window.alertBurnBan = false;
+    renderAlerts();
+  } catch(e) {
+    window.alertBurnBan = false;
+  }
+}
+
+// ─── Headlines — multi-source aggregated ────────────────────────
+function timeAgo(s) {
+  const d = (Date.now() - new Date(s).getTime()) / 60000;
+  if(d<60) return Math.round(d)+'m';
+  if(d<1440) return Math.round(d/60)+'h';
+  return Math.round(d/1440)+'d';
+}
+
+// ─── Tulsa / Oklahoma local feeds ────────────────────────────────
+const TULSA_FEEDS = [
+  {n:'NewsOn6',        url:'https://www.newson6.com/news/local?format=rss'},
+  {n:'KJRH',          url:'https://www.kjrh.com/news/local-news?format=rss'},
+  {n:'FOX23',         url:'https://www.fox23.com/news/local?format=rss'},
+  {n:'Tulsa World',   url:'https://tulsaworld.com/search/?f=rss&t=article&c=news&l=10&s=start_time&sd=desc'},
+  {n:'NonDoc',        url:'https://nondoc.com/feed/'},
+  {n:'Oklahoma Watch',url:'https://oklahomawatch.org/feed/'},
+];
+
+async function fetchTulsaNews() {
+  const allItems = (await Promise.all(TULSA_FEEDS.map(fetchFeed))).flat();
+  if (!allItems.length) {
+    if (!document.querySelector('.tn-item'))
+      document.getElementById('tn-col-a').innerHTML = '<div class="hl-err">Could not reach local sources — will retry in 1 hour</div>';
+    return;
+  }
+  allItems.sort((a,b) => (new Date(b.pub)||0) - (new Date(a.pub)||0));
+  const items = allItems.slice(0, 16);
+  const half = Math.ceil(items.length / 2);
+  const render = arr => arr.map(it => {
+    const age = it.pub ? timeAgo(it.pub) : '';
+    return `<div class="tn-item">
+      <a class="tn-link" href="${it.link}" target="_blank">${it.title}</a>
+      <div class="tn-meta"><span class="tn-src">${it.src}</span>${age ? ' · '+age : ''}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tn-col-a').innerHTML = render(items.slice(0, half));
+  document.getElementById('tn-col-b').innerHTML = render(items.slice(half));
+  const upd = document.getElementById('tn-updated');
+  if (upd) upd.textContent = 'updated ' + timeAgo(Date.now());
+}
+
+const FEEDS = [
+  // Wire services
+  {n:'Reuters',           url:'https://feeds.reuters.com/reuters/worldNews'},
+  {n:'AP',                url:'https://rsshub.app/apnews/topics/apf-topnews'},
+  // Anglophone / Western
+  {n:'BBC World',         url:'https://feeds.bbci.co.uk/news/world/rss.xml'},
+  {n:'The Guardian',      url:'https://www.theguardian.com/world/rss'},
+  {n:'NPR World',         url:'https://feeds.npr.org/1004/rss.xml'},
+  // Europe
+  {n:'DW',                url:'https://rss.dw.com/xml/rss-en-world'},
+  {n:'France 24',         url:'https://www.france24.com/en/rss'},
+  {n:'RFI',               url:'https://www.rfi.fr/en/rss'},
+  {n:'Euronews',          url:'https://www.euronews.com/rss'},
+  // Middle East / Africa
+  {n:'Al Jazeera',        url:'https://www.aljazeera.com/xml/rss/all.xml'},
+  {n:'Al-Monitor',        url:'https://www.al-monitor.com/rss'},
+  // South / Southeast Asia
+  {n:'Dawn',              url:'https://www.dawn.com/feeds/home'},
+  {n:'The Hindu',         url:'https://www.thehindu.com/news/international/?service=rss'},
+  {n:'Straits Times',     url:'https://www.straitstimes.com/global/rss.xml'},
+  // East Asia
+  {n:'Kyodo',             url:'https://english.kyodonews.net/rss/news.xml'},
+  {n:'Korea Herald',      url:'https://www.koreaherald.com/rss/020100000000.xml'},
+  {n:'SCMP',              url:'https://www.scmp.com/rss/91/feed'},
+  // Latin America
+  {n:'Buenos Aires Herald', url:'https://buenosairesherald.com/feed'},
+];
+
+const STOP = new Set(['that','this','with','have','from','they','will','been','were','said','after','also','about','what','when','than','into','their','more','some','would','could','there','which','where','while','being','other','these','those','then','over','such','says','amid']);
+
+function tokens(s) {
+  return s.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/).filter(w => w.length>3 && !STOP.has(w));
+}
+function overlap(a, b) {
+  const ta = new Set(tokens(a)), tb = new Set(tokens(b));
+  if(!ta.size || !tb.size) return 0;
+  let n = 0; ta.forEach(w => { if(tb.has(w)) n++; });
+  return n / Math.max(ta.size, tb.size);
+}
+
+async function fetchFeed(feed) {
+  try {
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
+    const json = await Promise.race([
+      fetch(proxy).then(r => r.json()),
+      new Promise((_,rej) => setTimeout(()=>rej(), 7000))
+    ]);
+    const xml = new DOMParser().parseFromString(json.contents, 'text/xml');
+    return Array.from(xml.querySelectorAll('item')).slice(0,15).map(item => ({
+      title: (item.querySelector('title')?.textContent||'').trim(),
+      link:  (item.querySelector('link')?.textContent||'#').trim(),
+      desc:  (item.querySelector('description')?.textContent||'').replace(/<[^>]+>/g,'').trim().slice(0,220),
+      pub:   item.querySelector('pubDate')?.textContent||'',
+      src:   feed.n,
+    })).filter(i => i.title.length > 12);
+  } catch(e) { return []; }
+}
+
+function toggleHL(idx) {
+  const items = document.querySelectorAll('.hl-item');
+  items.forEach((el, i) => {
+    if(i === idx) { el.classList.toggle('open'); }
+    else { el.classList.remove('open'); }
+  });
+}
+
+async function fetchHeadlines() {
+  const allItems = (await Promise.all(FEEDS.map(fetchFeed))).flat();
+  if(!allItems.length) {
+    // Keep existing if we have some; otherwise show error
+    if(!document.querySelector('.hl-item')) {
+      document.getElementById('hl-col-a').innerHTML = '<div class="hl-err">Could not reach news sources — will retry in 1 hour</div>';
+    }
+    return;
+  }
+
+  // Cluster similar stories
+  const clusters = [], used = new Set();
+  for(let i=0; i<allItems.length; i++) {
+    if(used.has(i)) continue;
+    const cl = {items:[allItems[i]], srcs:new Set([allItems[i].src])};
+    used.add(i);
+    for(let j=i+1; j<allItems.length; j++) {
+      if(used.has(j)) continue;
+      if(overlap(allItems[i].title, allItems[j].title) >= 0.28) {
+        cl.items.push(allItems[j]); cl.srcs.add(allItems[j].src); used.add(j);
+      }
+    }
+    clusters.push(cl);
+  }
+  clusters.sort((a,b) => {
+    const ds = b.srcs.size - a.srcs.size; if(ds !== 0) return ds;
+    return (new Date(b.items[0].pub)||0) - (new Date(a.items[0].pub)||0);
+  });
+
+  const items28 = clusters.slice(0, 28);
+  const half = Math.ceil(items28.length / 2);
+
+  function renderItems(arr, offset) {
+    return arr.map((cl, i) => {
+      const idx = i + offset;
+      const lead = cl.items[0], n = cl.srcs.size;
+      const age = lead.pub ? timeAgo(lead.pub) : '';
+      const covCls = n >= 4 ? 'cov-hot' : n === 3 ? 'cov-3' : n === 2 ? 'cov-2' : 'cov-1';
+      const srcList = [...cl.srcs].join(' · ');
+      const links = cl.items.map(it => `<a class="hl-link" href="${it.link}" target="_blank">${it.src}</a>`).join('');
+      return `<div class="hl-item" onclick="toggleHL(${idx})">
+        <div class="hl-row">
+          <span class="hl-cov ${covCls}">${n}</span>
+          <span class="hl-head"><span class="hl-title">${lead.title}</span></span>
+          <span class="hl-age">${age}</span>
+        </div>
+        <div class="hl-detail">
+          ${lead.desc ? `<div class="hl-desc">${lead.desc}…</div>` : ''}
+          <div class="hl-srcs">Covered by: ${srcList}</div>
+          <div class="hl-links">${links}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('hl-col-a').innerHTML = renderItems(items28.slice(0, half), 0);
+  document.getElementById('hl-col-b').innerHTML = renderItems(items28.slice(half), half);
+  hlUpdateTime = Date.now();
+  tickClocks();
+}
+
+// ─── Boothbay Harbor tides (NOAA Tides & Currents, station 8419317) ─────
+async function fetchTides() {
+  try {
+    const today = new Date();
+    const dateStr = today.getFullYear() +
+      String(today.getMonth()+1).padStart(2,'0') +
+      String(today.getDate()).padStart(2,'0');
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=8419317&product=predictions&datum=MLLW&time_zone=lst_ldt&interval=hilo&units=english&format=json&begin_date=${dateStr}&range=36`;
+    const data = await Promise.race([
+      fetch(url).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const preds = data.predictions || [];
+    const now = new Date();
+    const upcoming = preds.filter(p => new Date(p.t.replace(' ','T')) > now).slice(0,3);
+    if (!upcoming.length) {
+      document.getElementById('tide-list').innerHTML = '<div style="font-size:11px;color:#71717a">No data</div>';
+      return;
+    }
+    document.getElementById('tide-list').innerHTML = upcoming.map(p => {
+      const t = new Date(p.t.replace(' ','T'));
+      const h12 = t.getHours() % 12 || 12;
+      const min = String(t.getMinutes()).padStart(2,'0');
+      const ampm = t.getHours() >= 12 ? 'pm' : 'am';
+      const ht = parseFloat(p.v).toFixed(1);
+      const isHigh = p.type === 'H';
+      return `<div class="tide-row">
+        <span class="${isHigh ? 'tide-type-h' : 'tide-type-l'}">${isHigh ? 'High' : 'Low'}</span>
+        <span class="tide-time">${h12}:${min} ${ampm}</span>
+        <span class="tide-ht">${ht}ft</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('tide-list').innerHTML = '<div style="font-size:11px;color:#71717a">Unavailable</div>';
+  }
+}
+
+// ─── ISS position (wheretheiss.at) ───────────────────────────────
+function _haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+async function fetchISS() {
+  try {
+    const data = await Promise.race([
+      fetch('https://api.wheretheiss.at/v1/satellites/25544').then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const groundKm = _haversineKm(36.154, -96.0089, data.latitude, data.longitude);
+    const distMi = Math.round(groundKm * 0.621371).toLocaleString();
+    const altMi = Math.round(data.altitude * 0.621371);
+    const vis = data.visibility === 'daylight' ? '☀ sunlit' : '🌑 eclipsed';
+    document.getElementById('iss-dist').textContent = distMi + ' mi';
+    document.getElementById('iss-sub').textContent = `Alt ${altMi} mi · ${vis}`;
+  } catch(e) {
+    document.getElementById('iss-dist').textContent = '--';
+    document.getElementById('iss-sub').textContent = 'Unavailable';
+  }
+}
+
+// ─── Kp geomagnetic index (NOAA Space Weather) ───────────────────
+async function fetchKpIndex() {
+  try {
+    const data = await Promise.race([
+      fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json').then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    if (!data || !data.length) return;
+    // Find most recent valid reading
+    let kp = null;
+    for (let i = data.length-1; i >= 0; i--) {
+      const entry = data[i];
+      const raw = Array.isArray(entry) ? entry[1] : entry.kp_index;
+      if (raw != null && !isNaN(parseFloat(raw))) { kp = parseFloat(raw); break; }
+    }
+    if (kp === null) return;
+    const [label, col] =
+      kp < 3 ? ['Quiet — no visible aurora', '#6ee7b7'] :
+      kp < 4 ? ['Unsettled', '#a3e635'] :
+      kp < 5 ? ['Active — high-latitude aurora', '#fcd34d'] :
+      kp < 6 ? ['G1 Storm — aurora ~60°N', '#fdba74'] :
+      kp < 7 ? ['G2 Storm — aurora ~55°N', '#fca5a5'] :
+               ['G3+ Storm — widespread aurora', '#e879f9'];
+    const valEl = document.getElementById('kp-val');
+    valEl.textContent = kp.toFixed(1);
+    valEl.style.color = col;
+    const lblEl = document.getElementById('kp-label');
+    lblEl.textContent = label;
+    lblEl.style.color = col;
+  } catch(e) {
+    document.getElementById('kp-label').textContent = 'Unavailable';
+  }
+}
+
+// ─── Fire weather outlook (NWS active alerts, Tulsa zone OKZ061) ─
+async function fetchFireWeather() {
+  try {
+    const url = 'https://api.weather.gov/alerts/active?zone=OKZ061';
+    const data = await Promise.race([
+      fetch(url, {headers:{'Accept':'application/geo+json','User-Agent':'startpage/1.0'}}).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const fireAlerts = (data.features||[]).filter(f =>
+      /red flag|fire weather/i.test(f.properties.event)
+    );
+    const statusEl = document.getElementById('fire-status');
+    const detailEl = document.getElementById('fire-detail');
+    if (fireAlerts.length) {
+      const evt = fireAlerts[0].properties;
+      statusEl.textContent = evt.event;
+      statusEl.style.color = '#f97316';
+      const headline = (evt.headline || evt.description || '').replace(/^[A-Z ]+\s*[-–]\s*/,'').substring(0,120);
+      detailEl.textContent = headline;
+    } else {
+      statusEl.textContent = 'No Active Alerts';
+      statusEl.style.color = '#6ee7b7';
+      detailEl.textContent = 'No Red Flag Warning or Fire Weather Watch for Tulsa';
+    }
+  } catch(e) {
+    document.getElementById('fire-status').textContent = 'Unavailable';
+    document.getElementById('fire-status').style.color = '#71717a';
+  }
+}
+
+// ─── Oklahoma reservoirs (USGS NWIS) ─────────────────────────────
+async function fetchReservoirs() {
+  // parameterCd 62614 = reservoir surface elevation (ft above NGVD 1929)
+  // Keystone 07163500, Grand Lake 07191220, Eufaula 07150500
+  const SITES = [
+    { id:'07163500', name:'Keystone' },
+    { id:'07191220', name:'Grand Lake' },
+    { id:'07150500', name:'Eufaula' },
+  ];
+  try {
+    const ids = SITES.map(s=>s.id).join(',');
+    const url = `https://waterservices.usgs.gov/nwis/iv/?sites=${ids}&parameterCd=62614&format=json`;
+    const data = await Promise.race([
+      fetch(url).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const series = data.value?.timeSeries || [];
+    let html = '';
+    for (const ts of series) {
+      const siteCode = ts.sourceInfo?.siteCode?.[0]?.value;
+      const site = SITES.find(s=>s.id===siteCode);
+      const name = site ? site.name : (ts.sourceInfo?.siteName || siteCode);
+      const val = parseFloat(ts.values?.[0]?.value?.[0]?.value ?? 'NaN');
+      if (isNaN(val)) continue;
+      html += `<div class="res-row">
+        <span class="res-name">${name}</span>
+        <span class="res-val">${val.toFixed(1)} ft</span>
+      </div>`;
+    }
+    document.getElementById('reservoir-list').innerHTML = html ||
+      '<div style="font-size:11px;color:#71717a">No elevation data from USGS</div>';
+  } catch(e) {
+    document.getElementById('reservoir-list').innerHTML =
+      '<div style="font-size:11px;color:#71717a">Unavailable</div>';
+  }
+}
+
+// ─── Word of the Day (Merriam-Webster RSS) ───────────────────────
+async function fetchWOTD() {
+  try {
+    const url = 'https://www.merriam-webster.com/wotd/feed/rss2';
+    const json = await Promise.race([
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const doc = new DOMParser().parseFromString(json.contents, 'text/xml');
+    const item = doc.querySelector('item');
+    if (!item) return;
+    const word = item.querySelector('title')?.textContent?.trim() || '';
+    const raw  = item.querySelector('description')?.textContent?.trim() || '';
+    const def  = raw.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().substring(0,140);
+    document.getElementById('wotd-word').textContent = word;
+    document.getElementById('wotd-def').textContent  = def;
+  } catch(e) {
+    document.getElementById('wotd-word').textContent = 'Unavailable';
+  }
+}
+
+// ─── Wikipedia On This Day ────────────────────────────────────────
+async function fetchOnThisDay() {
+  try {
+    const now = new Date();
+    const url = `https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/events/${now.getMonth()+1}/${now.getDate()}`;
+    const data = await Promise.race([
+      fetch(url, {headers:{'User-Agent':'startpage/1.0'}}).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const events = (data.events || []).slice(0,4);
+    if (!events.length) return;
+    document.getElementById('otd-list').innerHTML = events.map(e =>
+      `<div class="otd-row"><span class="otd-year">${e.year}</span><span class="otd-text">${e.text}</span></div>`
+    ).join('');
+  } catch(e) {
+    document.getElementById('otd-list').innerHTML = '<div style="font-size:11px;color:#71717a">Unavailable</div>';
+  }
+}
+
+// ─── NASA Astronomy Picture of the Day ───────────────────────────
+async function fetchAPOD() {
+  try {
+    const data = await Promise.race([
+      fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY').then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,10000))
+    ]);
+    document.getElementById('apod-title').textContent = data.title || '';
+    if (data.media_type === 'image' && data.url) {
+      const img = document.getElementById('apod-img');
+      img.src = data.url;
+      img.style.display = 'block';
+    }
+    document.getElementById('apod-desc').textContent =
+      (data.explanation || '').substring(0, 220) + '…';
+  } catch(e) {
+    document.getElementById('apod-title').textContent = 'Unavailable';
+  }
+}
+
+// ─── TUL Airport status (FAA) ────────────────────────────────────
+async function fetchTULStatus() {
+  try {
+    const data = await Promise.race([
+      fetch('https://soa.smext.faa.gov/asws/api/airport/status/TUL').then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const statusEl = document.getElementById('tul-status');
+    const detailEl = document.getElementById('tul-detail');
+    const delays = (data.Delays || []).filter(d => d.type || d.Reason);
+    if (data.Status?.ClosureBegin) {
+      statusEl.textContent = 'Airport Closed';
+      statusEl.style.color = '#fca5a5';
+      detailEl.textContent = data.Status.ClosureEnd ? `Until ${data.Status.ClosureEnd}` : '';
+    } else if (delays.length) {
+      statusEl.textContent = delays[0].type || 'Delays';
+      statusEl.style.color = '#f97316';
+      detailEl.textContent = delays[0].Reason || '';
+    } else {
+      statusEl.textContent = 'No Delays';
+      statusEl.style.color = '#6ee7b7';
+      detailEl.textContent = 'TUL operating normally';
+    }
+  } catch(e) {
+    document.getElementById('tul-status').textContent = 'Unavailable';
+    document.getElementById('tul-status').style.color = '#71717a';
+  }
+}
+
+// ─── Oklahoma Legislature (RSS) ───────────────────────────────────
+async function fetchOKLeg() {
+  try {
+    const url = 'https://www.oklegislature.gov/Feed.aspx';
+    const json = await Promise.race([
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(rej,8000))
+    ]);
+    const doc = new DOMParser().parseFromString(json.contents, 'text/xml');
+    const items = Array.from(doc.querySelectorAll('item')).slice(0,4);
+    const el = document.getElementById('okleg-list');
+    if (!items.length) {
+      el.innerHTML = '<div style="font-size:10px;color:#52525b">No current activity — session likely not in progress</div>';
+      return;
+    }
+    el.innerHTML = items.map(it => {
+      const title = it.querySelector('title')?.textContent?.trim() || '';
+      const link  = it.querySelector('link')?.textContent?.trim() || '#';
+      return `<div class="okleg-row"><a class="okleg-link" href="${link}" target="_blank">${title}</a></div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('okleg-list').innerHTML =
+      '<div style="font-size:10px;color:#52525b">Unavailable</div>';
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────
+renderAlerts(); // show placeholders immediately
+CITIES.forEach(c => fetchCity(c).catch(console.error));
+fetchAllergy().catch(console.error);
+fetchHeadlines().catch(console.error);
+fetchTulsaNews().catch(console.error);
+checkBurnBan().catch(console.error);
+fetchNWSAlerts().catch(console.error);
+fetchRiver().catch(console.error);
+fetchEarthquakes().catch(console.error);
+fetchExchangeRate().catch(console.error);
+fetchTides().catch(console.error);
+fetchISS().catch(console.error);
+fetchKpIndex().catch(console.error);
+fetchFireWeather().catch(console.error);
+fetchReservoirs().catch(console.error);
+fetchWOTD().catch(console.error);
+fetchOnThisDay().catch(console.error);
+fetchAPOD().catch(console.error);
+fetchTULStatus().catch(console.error);
+fetchOKLeg().catch(console.error);
+
+// Weather + env + local: every 15 min
+setInterval(() => {
+  CITIES.forEach(c => fetchCity(c).catch(console.error));
+  fetchAllergy().catch(console.error);
+  checkBurnBan().catch(console.error);
+  fetchNWSAlerts().catch(console.error);
+  fetchRiver().catch(console.error);
+  fetchTides().catch(console.error);
+  fetchKpIndex().catch(console.error);
+  fetchFireWeather().catch(console.error);
+  fetchTULStatus().catch(console.error);
+}, 900000);
+// ISS: every 5 min (position changes rapidly)
+setInterval(() => fetchISS().catch(console.error), 300000);
+// Earthquakes + reservoirs: every 30 min
+setInterval(() => {
+  fetchEarthquakes().catch(console.error);
+  fetchReservoirs().catch(console.error);
+}, 1800000);
+// Exchange rate: every hour
+setInterval(() => fetchExchangeRate().catch(console.error), 3600000);
+// Headlines: every hour
+setInterval(() => fetchHeadlines().catch(console.error), 3600000);
+setInterval(() => fetchTulsaNews().catch(console.error), 3600000);
+// Daily-ish refreshes (every 6h — content changes once a day)
+setInterval(() => {
+  fetchWOTD().catch(console.error);
+  fetchOnThisDay().catch(console.error);
+  fetchAPOD().catch(console.error);
+  fetchOKLeg().catch(console.error);
+}, 21600000);
+</script>
+</body>
+</html>
