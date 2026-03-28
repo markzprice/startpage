@@ -718,6 +718,19 @@ body {
 // ─── Config ──────────────────────────────────────────────────────
 const GOOGLE_API_KEY = 'AIzaSyCC0CbF4UOO1MeVLjVSi25wX-3IJhDXBoc';
 
+// ─── CORS proxy helper (tries multiple providers) ────────────────
+async function corsProxy(url, timeout = 8000) {
+  const race = fn => Promise.race([fn(), new Promise((_,rej) => setTimeout(rej, timeout))]);
+  try {
+    const text = await race(() => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`).then(r => r.text()));
+    return { contents: text };
+  } catch(e) {}
+  try {
+    return await race(() => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r => r.json()));
+  } catch(e) {}
+  throw new Error('All CORS proxies failed');
+}
+
 // ─── WMO ────────────────────────────────────────────────────────
 const WMO = {
   0:['☀️','Clear'], 1:['🌤','Mostly clear'], 2:['⛅','Partly cloudy'], 3:['☁️','Overcast'],
@@ -1381,10 +1394,7 @@ async function fetchPollen() {
 async function checkBurnBan() {
   try {
     const url = 'https://www.forestry.ok.gov/burn-bans';
-    const json = await Promise.race([
-      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r => r.json()),
-      new Promise((_,rej) => setTimeout(rej, 8000))
-    ]);
+    const json = await corsProxy(url);
     const doc = new DOMParser().parseFromString(json.contents, 'text/html');
     const nodes = Array.from(doc.querySelectorAll('tr,li,td,p,div'));
     for(const node of nodes) {
@@ -1485,11 +1495,7 @@ function overlap(a, b) {
 
 async function fetchFeed(feed) {
   try {
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
-    const json = await Promise.race([
-      fetch(proxy).then(r => r.json()),
-      new Promise((_,rej) => setTimeout(()=>rej(), 7000))
-    ]);
+    const json = await corsProxy(feed.url, 7000);
     const xml = new DOMParser().parseFromString(json.contents, 'text/xml');
     return Array.from(xml.querySelectorAll('item')).slice(0,15).map(item => ({
       title: (item.querySelector('title')?.textContent||'').trim(),
@@ -1736,10 +1742,7 @@ async function fetchReservoirs() {
 async function fetchWOTD() {
   try {
     const url = 'https://www.merriam-webster.com/wotd/feed/rss2';
-    const json = await Promise.race([
-      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r=>r.json()),
-      new Promise((_,rej)=>setTimeout(rej,8000))
-    ]);
+    const json = await corsProxy(url);
     const doc = new DOMParser().parseFromString(json.contents, 'text/xml');
     const item = doc.querySelector('item');
     if (!item) return;
@@ -1825,10 +1828,7 @@ async function fetchTULStatus() {
 async function fetchOKLeg() {
   try {
     const url = 'https://www.oklegislature.gov/Feed.aspx';
-    const json = await Promise.race([
-      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r=>r.json()),
-      new Promise((_,rej)=>setTimeout(rej,8000))
-    ]);
+    const json = await corsProxy(url);
     const doc = new DOMParser().parseFromString(json.contents, 'text/xml');
     const items = Array.from(doc.querySelectorAll('item')).slice(0,4);
     const el = document.getElementById('okleg-list');
