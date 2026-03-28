@@ -454,9 +454,11 @@ body {
   }
 
   /* Local info panels: each one full width, stacked */
+  /* flex and min-width need !important to beat inline style attributes */
   #local-grid > .panel {
     min-width: 0 !important;
-    flex: 1 1 100%;
+    flex: 1 1 100% !important;
+    width: 100%;
   }
 
   /* Local cards inside panels: 2-col wrap */
