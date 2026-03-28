@@ -363,6 +363,12 @@ body {
 .otd-row:last-child { border-bottom:none; }
 .otd-year { color:#818cf8; font-weight:600; width:38px; flex-shrink:0; }
 .otd-text { color:#a1a1aa; line-height:1.4; }
+/* Notable Birthdays */
+.bday-row { display:flex; gap:6px; padding:2px 0; border-bottom:1px solid #2a2a32; font-size:10px; line-height:1.4; }
+.bday-row:last-child { border-bottom:none; }
+.bday-year { color:#34d399; font-weight:600; width:38px; flex-shrink:0; }
+.bday-info { color:#a1a1aa; }
+.bday-name { color:#e4e4e7; font-weight:500; margin-right:3px; }
 /* OK Legislature */
 .okleg-row { padding:2px 0; border-bottom:1px solid #2a2a32; }
 .okleg-row:last-child { border-bottom:none; }
@@ -751,6 +757,10 @@ body {
         <div class="local-card" style="flex:1 1 100%" id="otd-card">
           <div class="local-card-title">On This Day</div>
           <div id="otd-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
+        </div>
+        <div class="local-card" style="flex:1 1 100%" id="bday-card">
+          <div class="local-card-title">Notable Birthdays Today</div>
+          <div id="bday-list"><div style="font-size:11px;color:#3f3f46">Loading…</div></div>
         </div>
       </div>
     </div>
@@ -1839,18 +1849,44 @@ async function fetchWOTD() {
 async function fetchOnThisDay() {
   try {
     const now = new Date();
-    const url = `https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/events/${now.getMonth()+1}/${now.getDate()}`;
+    const mm = now.getMonth() + 1, dd = now.getDate();
+    const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`;
     const data = await Promise.race([
-      fetch(url, {headers:{'User-Agent':'startpage/1.0'}}).then(r=>r.json()),
-      new Promise((_,rej)=>setTimeout(rej,8000))
+      fetch(url).then(r => r.json()),
+      new Promise((_,rej) => setTimeout(rej, 8000))
     ]);
-    const events = (data.events || []).slice(0,4);
+    const events = (data.events || []).slice(0, 4);
     if (!events.length) return;
     document.getElementById('otd-list').innerHTML = events.map(e =>
       `<div class="otd-row"><span class="otd-year">${e.year}</span><span class="otd-text">${e.text}</span></div>`
     ).join('');
   } catch(e) {
     document.getElementById('otd-list').innerHTML = '<div style="font-size:11px;color:#71717a">Unavailable</div>';
+  }
+}
+
+async function fetchBirthdays() {
+  try {
+    const now = new Date();
+    const mm = now.getMonth() + 1, dd = now.getDate();
+    const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/births/${mm}/${dd}`;
+    const data = await Promise.race([
+      fetch(url).then(r => r.json()),
+      new Promise((_,rej) => setTimeout(rej, 8000))
+    ]);
+    // Filter to entries with a page description (indicates notability), take top 5
+    const births = (data.births || [])
+      .filter(b => b.pages && b.pages[0] && b.pages[0].description)
+      .slice(0, 5);
+    if (!births.length) return;
+    document.getElementById('bday-list').innerHTML = births.map(b => {
+      const page = b.pages[0];
+      const name = page.titles ? page.titles.normalized : (page.title || '');
+      const desc = page.description || '';
+      return `<div class="bday-row"><span class="bday-year">${b.year}</span><span class="bday-info"><span class="bday-name">${name}</span>${desc}</span></div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('bday-list').innerHTML = '<div style="font-size:11px;color:#71717a">Unavailable</div>';
   }
 }
 
@@ -1945,6 +1981,7 @@ fetchFireWeather().catch(console.error);
 fetchReservoirs().catch(console.error);
 fetchWOTD().catch(console.error);
 fetchOnThisDay().catch(console.error);
+fetchBirthdays().catch(console.error);
 fetchAPOD().catch(console.error);
 fetchTULStatus().catch(console.error);
 fetchOKLeg().catch(console.error);
@@ -1978,6 +2015,7 @@ setInterval(() => fetchTulsaNews().catch(console.error), 3600000);
 setInterval(() => {
   fetchWOTD().catch(console.error);
   fetchOnThisDay().catch(console.error);
+  fetchBirthdays().catch(console.error);
   fetchAPOD().catch(console.error);
   fetchOKLeg().catch(console.error);
 }, 21600000);
