@@ -402,6 +402,60 @@ body {
 .res-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; gap:6px; }
 .res-name { font-size:10px; color:#a1a1aa; }
 .res-val { font-size:11px; font-weight:600; color:#e4e4e7; }
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 768px) {
+
+  /* Weather section: stack everything vertically */
+  .wx-section {
+    flex-direction: column;
+  }
+  #cities-panel {
+    width: 100%;
+  }
+  #center-column {
+    width: 100%;
+  }
+  #extra-cities {
+    flex-direction: column;
+  }
+
+  /* Env cards: 3 per row on phone instead of all in one line */
+  .env-card,
+  .env-card-link {
+    min-width: calc(33% - 6px);
+    flex: 1 1 calc(33% - 6px);
+  }
+
+  /* Local info panels: each one full width, stacked */
+  #local-grid > .panel {
+    min-width: 0 !important;
+    flex: 1 1 100%;
+  }
+
+  /* Local cards inside panels: 2-col wrap */
+  .local-card {
+    min-width: calc(50% - 6px);
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  /* Headlines: single column */
+  .hl-cols {
+    flex-direction: column;
+  }
+
+  /* Tulsa news: single column */
+  .tn-cols {
+    flex-direction: column;
+  }
+
+  /* City block clock: slightly smaller on narrow screens */
+  .cb-time24 { font-size: 22px; }
+  .simple-city .cb-time24 { font-size: 18px; }
+
+  /* Tighten page padding */
+  .page-wrap { padding: 8px; gap: 8px; }
+}
 </style>
 </head>
 <body>
