@@ -521,7 +521,7 @@ body {
       <div class="pol-item"><span class="pol-name">Grass</span>  <span class="pol-badge pol-low" id="pol-grass">--</span></div>
       <div class="pol-item"><span class="pol-name">Ragweed</span><span class="pol-badge pol-low" id="pol-ragweed">--</span></div>
       <div class="pol-item"><span class="pol-name">Tree</span>   <span class="pol-badge pol-low" id="pol-tree">--</span></div>
-      <div class="pol-item"><span class="pol-name">Mold/Dust</span><span class="pol-badge pol-low" id="pol-mold">--</span></div>
+      <div class="pol-item"><span class="pol-name">Dust</span><span class="pol-badge pol-low" id="pol-mold">--</span></div>
     </div>
   </div>
 
@@ -828,17 +828,33 @@ body {
 // ─── Config ──────────────────────────────────────────────────────
 const GOOGLE_API_KEY = 'AIzaSyCC0CbF4UOO1MeVLjVSi25wX-3IJhDXBoc';
 
-// ─── CORS proxy helper (tries multiple providers) ────────────────
-async function corsProxy(url, timeout = 8000) {
-  const race = fn => Promise.race([fn(), new Promise((_,rej) => setTimeout(rej, timeout))]);
-  try {
-    const text = await race(() => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`).then(r => r.text()));
-    return { contents: text };
-  } catch(e) {}
-  try {
-    return await race(() => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`).then(r => r.json()));
-  } catch(e) {}
-  throw new Error('All CORS proxies failed');
+// ─── CORS proxy helper (multiple providers, validates payload) ───
+// Old version had a silent failure mode: fetch() does not reject on HTTP
+// errors, so a proxy returning a 4xx/5xx error page was accepted as
+// "contents", the fallback never fired, and the feed died silently.
+const PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+let proxyRotor = 0; // sticks with the last proxy that worked
+async function corsProxy(url, timeout = 8000, validate = null) {
+  const errs = [];
+  for (let i = 0; i < PROXIES.length; i++) {
+    const pick = (proxyRotor + i) % PROXIES.length;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), timeout);
+      const r = await fetch(PROXIES[pick](url), { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const text = await r.text();
+      if (validate && !validate(text)) throw new Error('payload failed validation');
+      proxyRotor = pick;
+      return { contents: text };
+    } catch (e) { errs.push(`${pick}:${e.message || e}`); }
+  }
+  throw new Error('All CORS proxies failed: ' + errs.join(' | '));
 }
 
 // ─── WMO ────────────────────────────────────────────────────────
@@ -1413,9 +1429,13 @@ function renderEnv() {
 
 // ─── Fetch air quality / allergy ────────────────────────────────
 async function fetchAllergy() {
+  // NOTE: Open-Meteo's pollen variables (grass/ragweed/birch) are Europe-only
+  // (CAMS European domain) and return null for Tulsa — they were dead weight
+  // here and the reason the old "Mold/Dust" badge never had real mold data.
+  // Google Pollen API covers tree/grass/weed; Open-Meteo supplies dust + AQ.
   const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
     +`?latitude=36.154&longitude=-96.0089`
-    +`&hourly=grass_pollen,ragweed_pollen,birch_pollen,dust,us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone`
+    +`&hourly=dust,us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone`
     +`&timezone=America/Chicago&forecast_days=2`;
   const data = await fetch(url).then(r => r.json());
   const nowSv = new Date().toLocaleString('sv',{timeZone:'America/Chicago'}).slice(0,13).replace(' ','T');
@@ -1423,9 +1443,6 @@ async function fetchAllergy() {
   if(idx < 0) idx = 0;
 
   const aqi   = Math.round(data.hourly.us_aqi?.[idx] ?? 0);
-  const grass = Math.round(data.hourly.grass_pollen?.[idx] ?? 0);
-  const rag   = Math.round(data.hourly.ragweed_pollen?.[idx] ?? 0);
-  const tree  = Math.round(data.hourly.birch_pollen?.[idx] ?? 0);
   const dust  = Math.round(data.hourly.dust?.[idx] ?? 0);
   const pm25  = Math.round((data.hourly.pm2_5?.[idx] ?? 0) * 10) / 10;
   const pm10  = Math.round(data.hourly.pm10?.[idx] ?? 0);
@@ -1463,7 +1480,8 @@ async function fetchAllergy() {
   document.getElementById('pm10-val').style.color = pm10col;
   document.getElementById('pm10-sub').textContent = pm10 < 54 ? 'Good' : pm10 < 154 ? 'Moderate' : 'Elevated';
 
-  // Mold/Dust (kept from Open-Meteo — Google Pollen API handles tree/grass/weed)
+  // Dust (Open-Meteo; relabeled 2026-06-10 — there was never a mold source,
+  // the old "Mold/Dust" label promised data no API here provides)
   const el = document.getElementById('pol-mold');
   const [lbl, cls] = pollenClass(dust, false);
   el.textContent = lbl; el.className = 'pol-badge '+cls;
@@ -1477,6 +1495,10 @@ async function fetchPollen() {
     const data = await fetch(url).then(r => r.json());
     const today = data.dailyInfo?.[0];
     if (!today) return;
+    // Out-of-season pollen types can be MISSING from pollenTypeInfo entirely,
+    // which used to leave their badges stuck at "--" forever (the "never
+    // complete" bug). Default all three to None once we have a valid day,
+    // then let actual data overwrite.
     function upiClass(v) {
       if (!v || v === 0) return ['None',  'pol-none'];
       if (v === 1)       return ['V.Low', 'pol-low'];
@@ -1491,6 +1513,7 @@ async function fetchPollen() {
       const [lbl, cls] = upiClass(value ?? 0);
       el.textContent = lbl; el.className = 'pol-badge ' + cls;
     }
+    setPolBadge('pol-tree', 0); setPolBadge('pol-grass', 0); setPolBadge('pol-ragweed', 0);
     for (const pt of today.pollenTypeInfo || []) {
       const v = pt.indexInfo?.value ?? 0;
       if (pt.code === 'TREE')  setPolBadge('pol-tree', v);
@@ -1603,18 +1626,35 @@ function overlap(a, b) {
   return n / Math.max(ta.size, tb.size);
 }
 
+function parseFeedXML(text, feedName) {
+  const xml = new DOMParser().parseFromString(text, 'text/xml');
+  if (xml.querySelector('parsererror')) return [];
+  let nodes = Array.from(xml.querySelectorAll('item')), isAtom = false;
+  if (!nodes.length) { nodes = Array.from(xml.querySelectorAll('entry')); isAtom = true; }
+  return nodes.slice(0,15).map(item => ({
+    title: (item.querySelector('title')?.textContent||'').trim(),
+    link:  isAtom ? (item.querySelector('link')?.getAttribute('href')||'#')
+                  : (item.querySelector('link')?.textContent||'#').trim(),
+    desc:  (item.querySelector(isAtom?'summary':'description')?.textContent||'').replace(/<[^>]+>/g,'').trim().slice(0,220),
+    pub:   item.querySelector(isAtom?'updated':'pubDate')?.textContent||'',
+    src:   feedName,
+  })).filter(i => i.title.length > 12);
+}
+
 async function fetchFeed(feed) {
+  const cacheKey = 'feedcache:' + feed.n;
   try {
-    const json = await corsProxy(feed.url, 7000);
-    const xml = new DOMParser().parseFromString(json.contents, 'text/xml');
-    return Array.from(xml.querySelectorAll('item')).slice(0,15).map(item => ({
-      title: (item.querySelector('title')?.textContent||'').trim(),
-      link:  (item.querySelector('link')?.textContent||'#').trim(),
-      desc:  (item.querySelector('description')?.textContent||'').replace(/<[^>]+>/g,'').trim().slice(0,220),
-      pub:   item.querySelector('pubDate')?.textContent||'',
-      src:   feed.n,
-    })).filter(i => i.title.length > 12);
-  } catch(e) { return []; }
+    const json = await corsProxy(feed.url, 7000, txt => parseFeedXML(txt, feed.n).length > 0);
+    const items = parseFeedXML(json.contents, feed.n);
+    try { localStorage.setItem(cacheKey, JSON.stringify({t: Date.now(), items})); } catch(e) {}
+    return { items, status: 'live' };
+  } catch(e) {
+    try {
+      const c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (c && Date.now() - c.t < 48*3600*1000) return { items: c.items, status: 'cached' };
+    } catch(e2) {}
+    return { items: [], status: 'dead' };
+  }
 }
 
 function toggleHL(idx) {
@@ -1626,7 +1666,13 @@ function toggleHL(idx) {
 }
 
 async function fetchHeadlines() {
-  const allItems = (await Promise.all(FEEDS.map(fetchFeed))).flat();
+  const results = await Promise.all(FEEDS.map(fetchFeed));
+  const allItems = results.map(r => r.items).flat();
+  const live = results.filter(r => r.status === 'live').length;
+  const cached = results.filter(r => r.status === 'cached').length;
+  const deadNames = FEEDS.filter((f, i) => results[i].status === 'dead').map(f => f.n);
+  window.hlSourceStamp = `sources: ${live}/${FEEDS.length} live` + (cached ? `, ${cached} cached` : '') + (deadNames.length ? ` · silent: ${deadNames.join(', ')}` : '');
+  console.log('[headlines] ' + window.hlSourceStamp);
   if(!allItems.length) {
     // Keep existing if we have some; otherwise show error
     if(!document.querySelector('.hl-item')) {
@@ -1681,7 +1727,8 @@ async function fetchHeadlines() {
   }
 
   document.getElementById('hl-col-a').innerHTML = renderItems(items28.slice(0, half), 0);
-  document.getElementById('hl-col-b').innerHTML = renderItems(items28.slice(half), half);
+  document.getElementById('hl-col-b').innerHTML = renderItems(items28.slice(half), half)
+    + `<div class="hl-err" style="opacity:.55;font-size:10px;margin-top:6px">${window.hlSourceStamp || ''}</div>`;
   hlUpdateTime = Date.now();
   tickClocks();
 }
